@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LinkTree</title>
+<link id="favicon" rel="icon" type="image/png" href="">
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -344,6 +345,7 @@ nav {
 .lk-label {
   font-size:15px; font-weight:500; letter-spacing:0.2px;
   position:relative; z-index:1;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .lk-arr {
   width:34px; height:34px; border-radius:10px; flex-shrink:0;
@@ -714,6 +716,34 @@ select option { background:var(--surface); }
 /* ═══════════════════════════════════════
    SAVE FLASH ANIMATION
 ═══════════════════════════════════════ */
+/* ─── LINK CARD IMAGE THUMBNAIL ─── */
+.lk-thumb {
+  width:44px; height:44px; border-radius:10px; flex-shrink:0;
+  object-fit:cover; border:2px solid var(--border);
+  transition:transform 0.3s cubic-bezier(.22,.68,0,1.2), border-color 0.3s;
+  margin-right:4px;
+}
+.lk:hover .lk-thumb { transform:scale(1.08); border-color:var(--border-focus); }
+
+.lk-left { display:flex; align-items:center; gap:12px; flex:1; min-width:0; }
+.lk-label { font-size:15px; font-weight:500; letter-spacing:0.2px; position:relative; z-index:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* admin link-row image field */
+.lr-img-row {
+  grid-column:1/-1;
+  display:flex; align-items:center; gap:8px; margin-top:2px;
+}
+.lr-img-preview {
+  width:36px; height:36px; border-radius:8px; object-fit:cover;
+  border:1.5px solid var(--border); flex-shrink:0;
+  display:none;
+}
+.lr-img-preview.has-img { display:block; }
+.lr-img-label {
+  font-size:11px; color:var(--text-muted); white-space:nowrap;
+  font-family:'Kanit',sans-serif;
+}
+
 @keyframes saveFlash {
   0%   { box-shadow:0 0 0 rgba(59,91,219,0); }
   40%  { box-shadow:0 0 32px rgba(59,91,219,0.5); }
@@ -968,7 +998,8 @@ function collectForm(){
   cfg.links=[];
   document.querySelectorAll('.lr-data').forEach(r=>{
     const l=r.querySelector('.ll').value.trim(),u=r.querySelector('.lu').value.trim();
-    if(l||u) cfg.links.push({label:l,url:u});
+    const img=r.querySelector('.li')?.value.trim()||'';
+    if(l||u) cfg.links.push({label:l,url:u,imgUrl:img});
   });
 }
 function fillForm(){
@@ -984,6 +1015,8 @@ function renderPublic(){
   gi('pub-title').textContent=cfg.title||'ลิงก์ของฉัน';
   document.title=cfg.title||'LinkTree';
   gi('pub-sub').textContent=cfg.subtitle||'';
+  // favicon
+  updateFavicon(cfg.logoUrl||'');
   const img=gi('pub-logo'),ph=gi('pub-logo-ph');
   if(cfg.logoUrl){ img.src=cfg.logoUrl; img.style.display='block'; ph.style.display='none'; }
   else{ img.style.display='none'; ph.style.display='flex'; }
@@ -1002,7 +1035,10 @@ function renderPublic(){
     const a=document.createElement('a'); a.className='lk';
     a.href=l.url||'#'; if(l.url) a.target='_blank'; a.rel='noopener';
     a.style.animationDelay=(i*0.07)+'s';
-    a.innerHTML=`<span class="lk-label">${esc(l.label||l.url)}</span><span class="lk-arr"><span>→</span></span>`;
+    const thumbHtml = l.imgUrl
+      ? `<img class="lk-thumb" src="${esc(l.imgUrl)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      : '';
+    a.innerHTML=`<span class="lk-left">${thumbHtml}<span class="lk-label">${esc(l.label||l.url)}</span></span><span class="lk-arr"><span>→</span></span>`;
     lc.appendChild(a);
   });
   applyTheme();
@@ -1016,10 +1052,17 @@ function renderLinks(){
 }
 function appendLR(l={},i=0){
   const d=document.createElement('div'); d.className='lr lr-data';
+  const imgVal=esc(l.imgUrl||'');
+  const hasImg=l.imgUrl?'has-img':'';
   d.innerHTML=`<div class="lr-num">ลิงก์ที่ ${String(i+1).padStart(2,'0')}</div>
     <input class="ll" type="text" placeholder="ชื่อปุ่ม" value="${esc(l.label||'')}">
     <input class="lu" type="url" placeholder="https://..." value="${esc(l.url||'')}">
-    <button class="lr-del" onclick="this.closest('.lr').remove();renum()" title="ลบ">×</button>`;
+    <button class="lr-del" onclick="this.closest('.lr').remove();renum()" title="ลบ">×</button>
+    <div class="lr-img-row" style="grid-column:1/-1">
+      <img class="lr-img-preview ${hasImg}" src="${imgVal}" alt="">
+      <input class="li" type="url" placeholder="🖼 URL รูปภาพกำกับปุ่ม (ไม่บังคับ)" value="${imgVal}"
+        oninput="previewLinkImg(this)" style="flex:1;margin:0;font-size:12px;padding:7px 10px">
+    </div>`;
   gi('link-list').appendChild(d);
 }
 function doAddLink(){ appendLR({},document.querySelectorAll('.lr').length); renum(); }
@@ -1099,6 +1142,7 @@ async function doUpload(e){
 function showPrev(src){
   const p=gi('logo-prev'); p.src=src; p.style.display='block';
   gi('logo-hint').style.display='none';
+  updateFavicon(src);
 }
 
 // ─── AUTH ───
@@ -1126,6 +1170,37 @@ function switchTab(tab,btn){
   document.querySelectorAll('.t-btn').forEach(b=>b.classList.remove('active'));
   gi('page-'+tab).classList.add('active');
   if(btn) btn.classList.add('active');
+}
+
+// ─── FAVICON ───
+function updateFavicon(url){
+  const fav=document.getElementById('favicon');
+  if(!fav) return;
+  if(url){
+    // For cross-origin images we draw to canvas to get a data-URL favicon
+    const img=new Image(); img.crossOrigin='anonymous';
+    img.onload=()=>{
+      try{
+        const c=document.createElement('canvas'); c.width=c.height=64;
+        const ctx=c.getContext('2d');
+        ctx.beginPath(); ctx.arc(32,32,32,0,Math.PI*2); ctx.clip();
+        ctx.drawImage(img,0,0,64,64);
+        fav.href=c.toDataURL('image/png');
+      }catch{ fav.href=url; }
+    };
+    img.onerror=()=>{ fav.href=url; };
+    img.src=url;
+  } else {
+    fav.href='';
+  }
+}
+
+// ─── LINK IMG PREVIEW ───
+function previewLinkImg(input){
+  const prev=input.closest('.lr-img-row').querySelector('.lr-img-preview');
+  const url=input.value.trim();
+  if(url){ prev.src=url; prev.classList.add('has-img'); }
+  else { prev.src=''; prev.classList.remove('has-img'); }
 }
 
 // ─── UTILS ───
