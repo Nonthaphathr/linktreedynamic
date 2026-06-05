@@ -605,24 +605,34 @@ select option { background:var(--surface); }
 ═══════════════════════════════════════ */
 .le-list { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
 .lr {
-  display:grid; gap:9px;
-  align-items:center; background:var(--surface2);
+  display:flex; flex-direction:column; gap:8px;
+  background:var(--surface2);
   border:1.5px solid var(--border); border-radius:var(--radius-sm);
   padding:12px 14px; transition:all 0.2s;
 }
 .lr:hover { border-color:rgba(116,143,252,0.35); box-shadow:var(--sh-sm); }
 .lr input { background:var(--surface); margin:0; }
+
+/* top row: handle + label + delete */
+.lr-top-row {
+  display:flex; align-items:center; gap:8px;
+}
 .lr-num {
-  font-size:10px; color:var(--text-muted); grid-column:1/-1;
-  margin-bottom:3px; font-weight:500; letter-spacing:0.5px;
+  flex:1; font-size:11px; color:var(--text-muted);
+  font-weight:500; letter-spacing:0.5px;
   font-family:'Kanit',sans-serif;
 }
+/* fields row: label input + url input side by side */
+.lr-fields {
+  display:grid; grid-template-columns:1fr 1fr; gap:8px;
+}
+@media(max-width:640px){ .lr-fields { grid-template-columns:1fr; } }
 .lr-del {
   width:34px; height:34px; border-radius:9px;
   background:transparent; border:1.5px solid var(--border);
   color:var(--text-muted); cursor:pointer;
   display:flex; align-items:center; justify-content:center;
-  font-size:15px; transition:all 0.2s;
+  font-size:15px; transition:all 0.2s; flex-shrink:0;
 }
 .lr-del:hover { background:#fef2f2; border-color:#fca5a5; color:#ef4444; transform:scale(1.1); }
 
@@ -789,6 +799,11 @@ select option { background:var(--surface); }
   color:#fff; box-shadow:0 3px 12px rgba(12,166,120,0.3);
 }
 .btn-xlsx-im:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(12,166,120,0.4); }
+.btn-danger {
+  background:linear-gradient(135deg,#c92a2a,#e03131);
+  color:#fff; box-shadow:0 3px 12px rgba(201,42,42,0.3);
+}
+.btn-danger:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(201,42,42,0.4); }
 .io-note { font-size:11px; color:var(--text-muted); font-family:'Kanit',sans-serif; }
 
 /* ═══════════════════════════════════════
@@ -797,8 +812,6 @@ select option { background:var(--surface); }
 @media(max-width:640px){
   .adm-grid { grid-template-columns:1fr; }
   .ac.full { grid-column:1; }
-  .lr { grid-template-columns:20px 1fr 36px; }
-  .lr .lu { grid-column:2/3; }
   .c-grid { grid-template-columns:1fr; }
 }
 /* ═══════════════════════════════════════
@@ -1095,7 +1108,9 @@ select option { background:var(--surface); }
             ⬆ Import .xlsx
             <input type="file" accept=".xlsx,.xls" style="display:none" onchange="doImportXlsx(event)">
           </label>
-          <span class="io-note">รองรับ: ลิงก์ · ประกาศ · ข้อมูลเว็บ</span>
+          <button class="btn btn-danger btn-sm" onclick="doClearAll()" style="margin-left:auto">
+            🗑 ล้างข้อมูลทั้งหมด
+          </button>
         </div>
 
         <div class="le-list" id="link-list"></div>
@@ -1256,16 +1271,19 @@ function renderLinks(){
 function appendLR(l={},i=0){
   const d=document.createElement('div');
   d.className='lr lr-data'; d.draggable=true;
-  d.style.gridTemplateColumns='20px 1fr 1fr 36px';
   const imgVal=esc(l.imgUrl||'');
   const hasImg=l.imgUrl?'has-img':'';
-  d.innerHTML=`<div class="lr-handle" title="ลากเพื่อเรียงลำดับ">⠿</div>
-    <div class="lr-num" style="grid-column:2/-1;margin-bottom:0">ลิงก์ที่ ${String(i+1).padStart(2,'0')}</div>
-    <div class="lr-handle" style="display:none"></div>
-    <input class="ll" type="text" placeholder="ชื่อปุ่ม" value="${esc(l.label||'')}">
-    <input class="lu" type="url" placeholder="https://..." value="${esc(l.url||'')}">
-    <button class="lr-del" onclick="this.closest('.lr').remove();renum();initDrag()" title="ลบ">×</button>
-    <div class="lr-img-row" style="grid-column:1/-1">
+  d.innerHTML=`
+    <div class="lr-top-row">
+      <div class="lr-handle" title="ลากเพื่อเรียงลำดับ">⠿</div>
+      <span class="lr-num">ลิงก์ที่ ${String(i+1).padStart(2,'0')}</span>
+      <button class="lr-del" onclick="this.closest('.lr').remove();renum();initDrag()" title="ลบ">×</button>
+    </div>
+    <div class="lr-fields">
+      <input class="ll" type="text" placeholder="ชื่อปุ่ม" value="${esc(l.label||'')}">
+      <input class="lu" type="url" placeholder="https://..." value="${esc(l.url||'')}">
+    </div>
+    <div class="lr-img-row">
       <img class="lr-img-preview ${hasImg}" src="${imgVal}" alt="">
       <input class="li" type="url" placeholder="🖼 URL รูปภาพกำกับปุ่ม (ไม่บังคับ)" value="${imgVal}"
         oninput="previewLinkImg(this)" style="flex:1;margin:0;font-size:12px;padding:7px 10px">
@@ -1628,6 +1646,17 @@ function doImportXlsx(e){
     }catch(err){ toast('อ่านไฟล์ไม่ได้: '+err.message,'err'); }
   };
   reader.readAsArrayBuffer(file);
+}
+
+function doClearAll(){
+  if(!confirm('⚠️ ล้างข้อมูลทั้งหมด?\n\nระบบจะ Export ข้อมูลปัจจุบันให้ก่อน แล้วจึงลบลิงก์และประกาศทั้งหมด\n\nกด OK เพื่อยืนยัน')) return;
+  // auto-export first
+  doExportXlsx();
+  // then clear
+  cfg.links=[];
+  cfg.announcements=[];
+  renderLinks(); renderAnns(); renderPublic();
+  toast('ล้างข้อมูลแล้ว (ไฟล์ backup ถูก export แล้ว)','ok');
 }
 
 // ─── UTILS ───
