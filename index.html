@@ -25,6 +25,9 @@ window._firestoreFns={doc,getDoc,setDoc,onSnapshot,ref,uploadBytes,getDownloadUR
 window._firebaseReady=true; window.dispatchEvent(new Event('firebaseReady'));
 </script>
 
+<!-- SheetJS for Excel export/import -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,300;1,400&display=swap" rel="stylesheet">
@@ -602,7 +605,7 @@ select option { background:var(--surface); }
 ═══════════════════════════════════════ */
 .le-list { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
 .lr {
-  display:grid; grid-template-columns:1fr 1fr 36px; gap:9px;
+  display:grid; gap:9px;
   align-items:center; background:var(--surface2);
   border:1.5px solid var(--border); border-radius:var(--radius-sm);
   padding:12px 14px; transition:all 0.2s;
@@ -751,13 +754,51 @@ select option { background:var(--surface); }
 }
 .flashed { animation:saveFlash 0.9s ease; }
 
+/* ── DRAG HANDLE ── */
+.lr { grid-template-columns:20px 1fr 1fr 36px; cursor:default; }
+.lr-handle {
+  display:flex; align-items:center; justify-content:center;
+  cursor:grab; color:var(--text-muted); font-size:16px;
+  user-select:none; touch-action:none;
+  transition:color 0.2s;
+}
+.lr-handle:active { cursor:grabbing; }
+.lr:hover .lr-handle { color:var(--accent); }
+.lr.drag-over { border-color:var(--accent); background:var(--accent-soft); box-shadow:var(--sh); }
+.lr.dragging { opacity:0.45; transform:scale(0.98); }
+
+/* ── EXPORT / IMPORT SECTION ── */
+.io-bar {
+  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  background:var(--surface2); border:1.5px solid var(--border);
+  border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:18px;
+}
+.io-label {
+  font-size:12px; font-weight:600; letter-spacing:1px;
+  text-transform:uppercase; color:var(--text-muted);
+  margin-right:4px; white-space:nowrap;
+  font-family:'Kanit',sans-serif;
+}
+.btn-xlsx-ex {
+  background:linear-gradient(135deg,#217346,#1e8449);
+  color:#fff; box-shadow:0 3px 12px rgba(33,115,70,0.3);
+}
+.btn-xlsx-ex:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(33,115,70,0.4); }
+.btn-xlsx-im {
+  background:linear-gradient(135deg,#0ca678,#20c997);
+  color:#fff; box-shadow:0 3px 12px rgba(12,166,120,0.3);
+}
+.btn-xlsx-im:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(12,166,120,0.4); }
+.io-note { font-size:11px; color:var(--text-muted); font-family:'Kanit',sans-serif; }
+
 /* ═══════════════════════════════════════
    RESPONSIVE
 ═══════════════════════════════════════ */
 @media(max-width:640px){
   .adm-grid { grid-template-columns:1fr; }
   .ac.full { grid-column:1; }
-  .lr { grid-template-columns:1fr; }
+  .lr { grid-template-columns:20px 1fr 36px; }
+  .lr .lu { grid-column:2/3; }
   .c-grid { grid-template-columns:1fr; }
 }
 /* ═══════════════════════════════════════
@@ -1043,6 +1084,20 @@ select option { background:var(--surface); }
       <!-- Links -->
       <div class="ac full">
         <div class="ac-title">ปุ่มลิงก์</div>
+
+        <!-- Export / Import bar -->
+        <div class="io-bar">
+          <span class="io-label">📊 ข้อมูล</span>
+          <button class="btn btn-xlsx-ex btn-sm" onclick="doExportXlsx()">
+            ⬇ Export .xlsx
+          </button>
+          <label class="btn btn-xlsx-im btn-sm" style="cursor:pointer;margin:0">
+            ⬆ Import .xlsx
+            <input type="file" accept=".xlsx,.xls" style="display:none" onchange="doImportXlsx(event)">
+          </label>
+          <span class="io-note">รองรับ: ลิงก์ · ประกาศ · ข้อมูลเว็บ</span>
+        </div>
+
         <div class="le-list" id="link-list"></div>
         <button class="add-lr" onclick="doAddLink()">
           <span style="font-size:18px;line-height:1">+</span> เพิ่มลิงก์
@@ -1191,20 +1246,25 @@ function renderPublic(){
   applyTheme();
 }
 
-// ─── ADMIN LINKS ───
+// ─── ADMIN LINKS (with drag-to-reorder) ───
 function renderLinks(){
   const lst=gi('link-list'); lst.innerHTML='';
   const links=cfg.links&&cfg.links.length?cfg.links:[{label:'',url:''}];
   links.forEach((l,i)=>appendLR(l,i));
+  initDrag();
 }
 function appendLR(l={},i=0){
-  const d=document.createElement('div'); d.className='lr lr-data';
+  const d=document.createElement('div');
+  d.className='lr lr-data'; d.draggable=true;
+  d.style.gridTemplateColumns='20px 1fr 1fr 36px';
   const imgVal=esc(l.imgUrl||'');
   const hasImg=l.imgUrl?'has-img':'';
-  d.innerHTML=`<div class="lr-num">ลิงก์ที่ ${String(i+1).padStart(2,'0')}</div>
+  d.innerHTML=`<div class="lr-handle" title="ลากเพื่อเรียงลำดับ">⠿</div>
+    <div class="lr-num" style="grid-column:2/-1;margin-bottom:0">ลิงก์ที่ ${String(i+1).padStart(2,'0')}</div>
+    <div class="lr-handle" style="display:none"></div>
     <input class="ll" type="text" placeholder="ชื่อปุ่ม" value="${esc(l.label||'')}">
     <input class="lu" type="url" placeholder="https://..." value="${esc(l.url||'')}">
-    <button class="lr-del" onclick="this.closest('.lr').remove();renum()" title="ลบ">×</button>
+    <button class="lr-del" onclick="this.closest('.lr').remove();renum();initDrag()" title="ลบ">×</button>
     <div class="lr-img-row" style="grid-column:1/-1">
       <img class="lr-img-preview ${hasImg}" src="${imgVal}" alt="">
       <input class="li" type="url" placeholder="🖼 URL รูปภาพกำกับปุ่ม (ไม่บังคับ)" value="${imgVal}"
@@ -1212,8 +1272,48 @@ function appendLR(l={},i=0){
     </div>`;
   gi('link-list').appendChild(d);
 }
-function doAddLink(){ appendLR({},document.querySelectorAll('.lr').length); renum(); }
-function renum(){ document.querySelectorAll('.lr-num').forEach((e,i)=>e.textContent=`ลิงก์ที่ ${String(i+1).padStart(2,'0')}`); }
+function doAddLink(){ appendLR({},document.querySelectorAll('.lr').length); renum(); initDrag(); }
+function renum(){
+  let n=0;
+  document.querySelectorAll('#link-list .lr-num').forEach(e=>{
+    n++;
+    e.textContent=`ลิงก์ที่ ${String(n).padStart(2,'0')}`;
+  });
+}
+
+// ─── DRAG TO REORDER ───
+function initDrag(){
+  let dragSrc=null;
+  const rows=()=>[...document.querySelectorAll('#link-list .lr-data')];
+  document.querySelectorAll('#link-list .lr-data').forEach(row=>{
+    row.addEventListener('dragstart',e=>{
+      dragSrc=row; row.classList.add('dragging');
+      e.dataTransfer.effectAllowed='move';
+    });
+    row.addEventListener('dragend',()=>{
+      row.classList.remove('dragging');
+      rows().forEach(r=>r.classList.remove('drag-over'));
+    });
+    row.addEventListener('dragover',e=>{
+      e.preventDefault(); e.dataTransfer.dropEffect='move';
+      rows().forEach(r=>r.classList.remove('drag-over'));
+      if(row!==dragSrc) row.classList.add('drag-over');
+    });
+    row.addEventListener('drop',e=>{
+      e.preventDefault();
+      if(dragSrc&&dragSrc!==row){
+        const list=gi('link-list');
+        const allRows=rows();
+        const fromIdx=allRows.indexOf(dragSrc);
+        const toIdx=allRows.indexOf(row);
+        if(fromIdx<toIdx) list.insertBefore(dragSrc,row.nextSibling);
+        else list.insertBefore(dragSrc,row);
+        renum();
+      }
+      rows().forEach(r=>r.classList.remove('drag-over'));
+    });
+  });
+}
 
 // ─── ANNOUNCEMENTS ───
 function renderAnns(){
@@ -1430,6 +1530,104 @@ function playLinkTransition(e, label, url) {
   setTimeout(() => {
     overlay.classList.remove('running');
   }, NAV_DELAY + 500);
+}
+
+// ─── EXPORT / IMPORT XLSX ───
+function doExportXlsx(){
+  if(typeof XLSX==='undefined'){ toast('SheetJS ยังไม่โหลด กรุณารอสักครู่','err'); return; }
+  collectForm();
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: Links
+  const linksData = [['ลำดับ','ชื่อปุ่ม','URL','URL รูปภาพ']];
+  (cfg.links||[]).forEach((l,i)=>{ linksData.push([i+1, l.label||'', l.url||'', l.imgUrl||'']); });
+  const wsLinks = XLSX.utils.aoa_to_sheet(linksData);
+  wsLinks['!cols']=[{wch:8},{wch:30},{wch:50},{wch:50}];
+  XLSX.utils.book_append_sheet(wb, wsLinks, 'ลิงก์');
+
+  // Sheet 2: Announcements
+  const annData = [['ลำดับ','ข้อความประกาศ']];
+  (cfg.announcements||[]).forEach((a,i)=>{ annData.push([i+1, a]); });
+  const wsAnn = XLSX.utils.aoa_to_sheet(annData);
+  wsAnn['!cols']=[{wch:8},{wch:80}];
+  XLSX.utils.book_append_sheet(wb, wsAnn, 'ประกาศ');
+
+  // Sheet 3: Settings
+  const settingsData = [
+    ['การตั้งค่า','ค่า'],
+    ['ชื่อเว็บไซต์', cfg.title||''],
+    ['คำอธิบาย', cfg.subtitle||''],
+    ['URL โลโก้', cfg.logoUrl||''],
+    ['สีหลัก (accent1)', cfg.accent1||''],
+    ['สีรอง (accent2)', cfg.accent2||''],
+    ['สีพื้นหลัง', cfg.bgColor||''],
+    ['สีข้อความ', cfg.textColor||''],
+  ];
+  const wsSet = XLSX.utils.aoa_to_sheet(settingsData);
+  wsSet['!cols']=[{wch:25},{wch:60}];
+  XLSX.utils.book_append_sheet(wb, wsSet, 'ตั้งค่า');
+
+  const fname=`linktree_${new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb, fname);
+  toast('Export สำเร็จ: '+fname, 'ok');
+}
+
+function doImportXlsx(e){
+  const file=e.target.files[0]; if(!file) return;
+  e.target.value=''; // reset input
+  if(typeof XLSX==='undefined'){ toast('SheetJS ยังไม่โหลด','err'); return; }
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'array'});
+      let imported=0;
+
+      // Import Links
+      const wsLinks=wb.Sheets['ลิงก์'];
+      if(wsLinks){
+        const rows=XLSX.utils.sheet_to_json(wsLinks,{header:1});
+        const newLinks=[];
+        rows.slice(1).forEach(r=>{
+          if(r.length>=2){
+            const label=String(r[1]||'').trim(), url=String(r[2]||'').trim(), imgUrl=String(r[3]||'').trim();
+            if(label||url) newLinks.push({label,url,imgUrl});
+          }
+        });
+        if(newLinks.length){ cfg.links=newLinks; imported++; }
+      }
+
+      // Import Announcements
+      const wsAnn=wb.Sheets['ประกาศ'];
+      if(wsAnn){
+        const rows=XLSX.utils.sheet_to_json(wsAnn,{header:1});
+        const newAnns=[];
+        rows.slice(1).forEach(r=>{ if(r[1]) newAnns.push(String(r[1]).trim()); });
+        if(newAnns.length){ cfg.announcements=newAnns; imported++; }
+      }
+
+      // Import Settings
+      const wsSet=wb.Sheets['ตั้งค่า'];
+      if(wsSet){
+        const rows=XLSX.utils.sheet_to_json(wsSet,{header:1});
+        const map={};
+        rows.slice(1).forEach(r=>{ if(r[0]&&r[1]!==undefined) map[String(r[0]).trim()]=String(r[1]||'').trim(); });
+        if(map['ชื่อเว็บไซต์'])   cfg.title      = map['ชื่อเว็บไซต์'];
+        if(map['คำอธิบาย'])      cfg.subtitle   = map['คำอธิบาย'];
+        if(map['URL โลโก้'])     cfg.logoUrl    = map['URL โลโก้'];
+        if(map['สีหลัก (accent1)']) cfg.accent1 = map['สีหลัก (accent1)'];
+        if(map['สีรอง (accent2)'])  cfg.accent2 = map['สีรอง (accent2)'];
+        if(map['สีพื้นหลัง'])    cfg.bgColor    = map['สีพื้นหลัง'];
+        if(map['สีข้อความ'])     cfg.textColor  = map['สีข้อความ'];
+        imported++;
+      }
+
+      if(imported===0){ toast('ไม่พบข้อมูลที่รู้จักในไฟล์ xlsx','err'); return; }
+
+      fillForm(); renderLinks(); renderAnns(); renderPublic(); applyTheme();
+      toast(`Import สำเร็จ! (${imported} ชีท)`, 'ok');
+    }catch(err){ toast('อ่านไฟล์ไม่ได้: '+err.message,'err'); }
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 // ─── UTILS ───
