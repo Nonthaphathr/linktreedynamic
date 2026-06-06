@@ -757,6 +757,73 @@ select option { background:var(--surface); }
   font-family:'Kanit',sans-serif;
 }
 
+/* ═══════════════════════════════════════
+   PROFILE SWITCHER
+═══════════════════════════════════════ */
+.ps-bar {
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  background:var(--surface); border:1.5px solid var(--border);
+  border-radius:var(--radius); padding:16px 20px;
+  margin-bottom:20px; box-shadow:var(--sh-sm);
+  position:relative; overflow:hidden;
+}
+.ps-bar::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+}
+.ps-label {
+  font-size:11px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase;
+  color:var(--accent); font-family:'Kanit',sans-serif; white-space:nowrap;
+  display:flex; align-items:center; gap:6px;
+}
+.ps-tabs {
+  display:flex; gap:6px; flex-wrap:wrap; flex:1;
+}
+.ps-tab {
+  display:flex; align-items:center; gap:7px;
+  padding:7px 14px; border-radius:24px; cursor:pointer;
+  border:1.5px solid var(--border); background:var(--surface2);
+  font-size:13px; font-weight:500; color:var(--text-mid);
+  transition:all 0.22s; font-family:'Kanit',sans-serif;
+  position:relative;
+}
+.ps-tab:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+.ps-tab.active {
+  border-color:var(--accent); color:var(--accent); background:var(--accent-soft);
+  box-shadow:0 0 0 3px rgba(116,143,252,0.15);
+}
+.ps-tab .ps-live-dot {
+  width:7px; height:7px; border-radius:50%; background:#22c55e;
+  box-shadow:0 0 6px rgba(34,197,94,0.7);
+  animation:pls 2s ease-in-out infinite; flex-shrink:0;
+}
+.ps-tab .ps-del {
+  width:16px; height:16px; border-radius:50%; background:rgba(239,68,68,0.12);
+  color:#ef4444; font-size:10px; display:none; align-items:center; justify-content:center;
+  border:none; cursor:pointer; transition:all 0.15s; padding:0; line-height:1;
+  flex-shrink:0;
+}
+.ps-tab:hover .ps-del { display:flex; }
+.ps-tab .ps-del:hover { background:#ef4444; color:#fff; transform:scale(1.15); }
+.ps-new {
+  display:flex; align-items:center; gap:5px;
+  padding:7px 12px; border-radius:24px; cursor:pointer;
+  border:1.5px dashed var(--border); background:transparent;
+  font-size:13px; font-weight:500; color:var(--text-muted);
+  transition:all 0.22s; font-family:'Kanit',sans-serif;
+}
+.ps-new:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+
+/* active profile badge on public page */
+.pub-profile-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  background:rgba(255,255,255,0.85); border:1px solid rgba(116,143,252,0.25);
+  border-radius:20px; padding:4px 12px; font-size:12px; color:var(--text-muted);
+  font-family:'Kanit',sans-serif; font-weight:400;
+  backdrop-filter:blur(8px); margin-top:6px;
+  box-shadow:0 2px 8px rgba(59,91,219,0.08);
+}
+
 @keyframes saveFlash {
   0%   { box-shadow:0 0 0 rgba(59,91,219,0); }
   40%  { box-shadow:0 0 32px rgba(59,91,219,0.5); }
@@ -994,6 +1061,9 @@ select option { background:var(--surface); }
       </div>
       <h1 class="pub-name" id="pub-title">ลิงก์ของฉัน</h1>
       <p class="pub-sub" id="pub-sub"></p>
+      <div id="pub-profile-badge" class="pub-profile-badge" style="display:none">
+        <span class="sdot"></span><span id="pub-profile-name"></span>
+      </div>
     </div>
 
     <div class="rule"></div>
@@ -1034,12 +1104,21 @@ select option { background:var(--surface); }
     <div class="adm-hd">
       <div>
         <div class="adm-title">แผงควบคุม</div>
-        <div class="adm-sub">จัดการหน้าลิงก์ของคุณ</div>
+        <div class="adm-sub">กำลังแก้ไข: <span id="adm-profile-name" style="color:var(--accent);font-weight:500">โปรไฟล์หลัก</span></div>
       </div>
       <button class="btn btn-o btn-sm" onclick="doLogout()">ออกจากระบบ</button>
     </div>
 
     <div class="adm-grid">
+
+      <!-- Profile Switcher -->
+      <div class="ac full" style="padding:0;overflow:visible;border:none;background:none;box-shadow:none;">
+        <div class="ps-bar" id="ps-bar">
+          <span class="ps-label">🏫 โปรไฟล์</span>
+          <div class="ps-tabs" id="ps-tabs"></div>
+          <button class="ps-new" onclick="doNewProfile()">＋ เพิ่มโปรไฟล์</button>
+        </div>
+      </div>
 
       <!-- Identity -->
       <div class="ac">
@@ -1133,12 +1212,29 @@ select option { background:var(--surface); }
 
 <script>
 // ─── STATE ───
-let cfg = {
-  title:'ลิงก์ของฉัน', subtitle:'', password:'admin123',
-  logoUrl:'', accent1:'#3b5bdb', accent2:'#4dabf7',
-  bgColor:'#f0f4ff', textColor:'#1a1f36',
+const DEFAULT_PROFILE = {
+  title:'ลิงก์ของฉัน', subtitle:'', logoUrl:'',
+  accent1:'#3b5bdb', accent2:'#4dabf7', bgColor:'#f0f4ff', textColor:'#1a1f36',
   links:[], announcements:[]
 };
+
+let store = {
+  password: 'admin123',
+  activeProfile: 'p1',
+  profiles: {
+    p1: { name:'โปรไฟล์หลัก', ...DEFAULT_PROFILE }
+  }
+};
+
+// helper: get active profile data
+function ap(){ return store.profiles[store.activeProfile] || Object.values(store.profiles)[0]; }
+// alias for old code that reads cfg.*
+function getCfg(){
+  const p=ap();
+  return { ...p, password:store.password };
+}
+// shorthand write to active profile
+function setAP(key,val){ ap()[key]=val; }
 
 // ─── PRESETS ───
 const PRESETS = [
@@ -1154,17 +1250,25 @@ const PRESETS = [
 
 // ─── FIREBASE ───
 window.addEventListener('firebaseReady', async()=>{
-  await loadConfig(); buildPresets();
+  await loadConfig(); buildPresets(); buildProfileTabs();
   gi('loading').classList.add('hidden');
   const {doc,onSnapshot}=window._firestoreFns;
   onSnapshot(doc(window._db,'linktree','config'),snap=>{
-    if(snap.exists()){ cfg={...cfg,...snap.data()}; renderPublic(); }
+    if(snap.exists()){
+      const d=snap.data();
+      // merge carefully — only update store keys that exist
+      if(d.profiles) store.profiles=d.profiles;
+      if(d.activeProfile) store.activeProfile=d.activeProfile;
+      if(d.password) store.password=d.password;
+      renderPublic();
+    }
   });
 });
 setTimeout(()=>{
   if(!window._firebaseReady){
     gi('loading').classList.add('hidden');
-    buildPresets(); renderPublic(); renderLinks(); renderAnns(); fillForm();
+    buildPresets(); buildProfileTabs();
+    renderPublic(); renderLinks(); renderAnns(); fillForm();
     toast('Firebase ยังไม่เชื่อมต่อ','err');
   }
 },5000);
@@ -1174,9 +1278,25 @@ async function loadConfig(){
   try{
     const {doc,getDoc}=window._firestoreFns;
     const s=await getDoc(doc(window._db,'linktree','config'));
-    if(s.exists()) cfg={...cfg,...s.data()};
-    else await doSave(true);
-    fillForm(); renderPublic(); renderLinks(); renderAnns(); applyTheme();
+    if(s.exists()){
+      const d=s.data();
+      // support old flat format → migrate
+      if(!d.profiles){
+        const migrated = { name:'โปรไฟล์หลัก', ...DEFAULT_PROFILE };
+        const keys=['title','subtitle','logoUrl','accent1','accent2','bgColor','textColor','links','announcements'];
+        keys.forEach(k=>{ if(d[k]!==undefined) migrated[k]=d[k]; });
+        store.profiles={ p1: migrated };
+        store.activeProfile='p1';
+        if(d.password) store.password=d.password;
+      } else {
+        if(d.profiles) store.profiles=d.profiles;
+        if(d.activeProfile) store.activeProfile=d.activeProfile;
+        if(d.password) store.password=d.password;
+      }
+    } else {
+      await doSave(true);
+    }
+    fillForm(); renderPublic(); renderLinks(); renderAnns(); applyTheme(); buildProfileTabs();
   }catch(e){ toast('โหลดข้อมูลไม่สำเร็จ: '+e.message,'err'); }
 }
 
@@ -1184,7 +1304,7 @@ async function doSave(silent=false){
   try{
     collectForm();
     const {doc,setDoc}=window._firestoreFns;
-    await setDoc(doc(window._db,'linktree','config'),cfg);
+    await setDoc(doc(window._db,'linktree','config'), store);
     renderPublic(); applyTheme();
     if(!silent){
       const b=gi('save-btn');
@@ -1196,42 +1316,57 @@ async function doSave(silent=false){
 
 // ─── FORM ───
 function collectForm(){
-  cfg.title    = gi('cfg-title').value||cfg.title;
-  cfg.subtitle = gi('cfg-sub').value;
-  const pw=gi('cfg-pw').value; if(pw) cfg.password=pw;
-  const lu=gi('cfg-logo-url').value; if(lu) cfg.logoUrl=lu;
-  cfg.accent1   = gi('ca1').value;
-  cfg.accent2   = gi('ca2').value;
-  cfg.bgColor   = gi('cbg').value;
-  cfg.textColor = gi('ctx').value;
-  cfg.links=[];
+  const p=ap();
+  p.title    = gi('cfg-title').value||p.title;
+  p.subtitle = gi('cfg-sub').value;
+  const pw=gi('cfg-pw').value; if(pw) store.password=pw;
+  const lu=gi('cfg-logo-url').value; if(lu) p.logoUrl=lu;
+  p.accent1   = gi('ca1').value;
+  p.accent2   = gi('ca2').value;
+  p.bgColor   = gi('cbg').value;
+  p.textColor = gi('ctx').value;
+  p.links=[];
   document.querySelectorAll('.lr-data').forEach(r=>{
     const l=r.querySelector('.ll').value.trim(),u=r.querySelector('.lu').value.trim();
     const img=r.querySelector('.li')?.value.trim()||'';
-    if(l||u) cfg.links.push({label:l,url:u,imgUrl:img});
+    if(l||u) p.links.push({label:l,url:u,imgUrl:img});
   });
 }
 function fillForm(){
-  sv('cfg-title',cfg.title||''); sv('cfg-sub',cfg.subtitle||'');
-  sv('cfg-logo-url',cfg.logoUrl||'');
-  gi('ca1').value=cfg.accent1||'#3b5bdb'; gi('ca2').value=cfg.accent2||'#4dabf7';
-  gi('cbg').value=cfg.bgColor||'#f0f4ff'; gi('ctx').value=cfg.textColor||'#1a1f36';
-  syncCL(); if(cfg.logoUrl) showPrev(cfg.logoUrl);
+  const p=ap();
+  sv('cfg-title',p.title||''); sv('cfg-sub',p.subtitle||'');
+  sv('cfg-logo-url',p.logoUrl||'');
+  gi('ca1').value=p.accent1||'#3b5bdb'; gi('ca2').value=p.accent2||'#4dabf7';
+  gi('cbg').value=p.bgColor||'#f0f4ff'; gi('ctx').value=p.textColor||'#1a1f36';
+  syncCL();
+  // logo preview
+  if(p.logoUrl){ showPrev(p.logoUrl); } else {
+    const prev=gi('logo-prev'); prev.style.display='none';
+    gi('logo-hint').style.display='block';
+  }
 }
 
 // ─── RENDER PUBLIC ───
 function renderPublic(){
-  gi('pub-title').textContent=cfg.title||'ลิงก์ของฉัน';
-  document.title=cfg.title||'LinkTree';
-  gi('pub-sub').textContent=cfg.subtitle||'';
+  const p=ap();
+  gi('pub-title').textContent=p.title||'ลิงก์ของฉัน';
+  document.title=p.title||'LinkTree';
+  gi('pub-sub').textContent=p.subtitle||'';
+  // profile badge — show if more than 1 profile exists
+  const badge=gi('pub-profile-badge'), badgeName=gi('pub-profile-name');
+  const profileCount=Object.keys(store.profiles).length;
+  if(profileCount>1 && p.name){
+    badgeName.textContent=p.name;
+    badge.style.display='inline-flex';
+  } else { badge.style.display='none'; }
   // favicon
-  updateFavicon(cfg.logoUrl||'');
+  updateFavicon(p.logoUrl||'');
   const img=gi('pub-logo'),ph=gi('pub-logo-ph');
-  if(cfg.logoUrl){ img.src=cfg.logoUrl; img.style.display='block'; ph.style.display='none'; }
+  if(p.logoUrl){ img.src=p.logoUrl; img.style.display='block'; ph.style.display='none'; }
   else{ img.style.display='none'; ph.style.display='flex'; }
   // announcements
   const ac=gi('pub-anns'); ac.innerHTML='';
-  (cfg.announcements||[]).forEach((a,i)=>{
+  (p.announcements||[]).forEach((a,i)=>{
     const d=document.createElement('div'); d.className='ann-pill';
     d.style.animationDelay=(i*0.08)+'s';
     d.innerHTML=`<div class="ann-icon">📢</div><div><div class="ann-tag">ประกาศ</div><div class="ann-msg">${esc(a)}</div></div>`;
@@ -1239,7 +1374,7 @@ function renderPublic(){
   });
   // links
   const lc=gi('pub-links'); lc.innerHTML='';
-  (cfg.links||[]).forEach((l,i)=>{
+  (p.links||[]).forEach((l,i)=>{
     if(!l.label&&!l.url) return;
     const a=document.createElement('a'); a.className='lk';
     a.href=l.url||'#';
@@ -1249,7 +1384,6 @@ function renderPublic(){
       ? `<img class="lk-thumb" src="${esc(l.imgUrl)}" alt="" loading="lazy" onerror="this.style.display='none'">`
       : '';
     a.innerHTML=`<span class="lk-left">${thumbHtml}<span class="lk-label">${esc(l.label||l.url)}</span></span><span class="lk-arr"><span>→</span></span>`;
-    // Attach transition click
     if(l.url){
       a.addEventListener('click', e=>{
         e.preventDefault();
@@ -1264,7 +1398,7 @@ function renderPublic(){
 // ─── ADMIN LINKS (with drag-to-reorder) ───
 function renderLinks(){
   const lst=gi('link-list'); lst.innerHTML='';
-  const links=cfg.links&&cfg.links.length?cfg.links:[{label:'',url:''}];
+  const links=ap().links&&ap().links.length?ap().links:[{label:'',url:''}];
   links.forEach((l,i)=>appendLR(l,i));
   initDrag();
 }
@@ -1336,7 +1470,7 @@ function initDrag(){
 // ─── ANNOUNCEMENTS ───
 function renderAnns(){
   const lst=gi('ann-list'); lst.innerHTML='';
-  (cfg.announcements||[]).forEach((a,i)=>{
+  (ap().announcements||[]).forEach((a,i)=>{
     const d=document.createElement('div'); d.className='ann-adm-item';
     d.innerHTML=`<span>${esc(a)}</span><button class="btn btn-g" onclick="rmAnn(${i})">✕</button>`;
     lst.appendChild(d);
@@ -1344,11 +1478,11 @@ function renderAnns(){
 }
 function doAddAnn(){
   const t=gi('new-ann').value.trim(); if(!t) return;
-  if(!cfg.announcements) cfg.announcements=[];
-  cfg.announcements.push(t);
+  if(!ap().announcements) ap().announcements=[];
+  ap().announcements.push(t);
   sv('new-ann',''); renderAnns(); renderPublic(); toast('เพิ่มประกาศแล้ว','ok');
 }
-function rmAnn(i){ cfg.announcements.splice(i,1); renderAnns(); renderPublic(); }
+function rmAnn(i){ ap().announcements.splice(i,1); renderAnns(); renderPublic(); }
 
 // ─── THEME ───
 function buildPresets(){
@@ -1360,7 +1494,8 @@ function buildPresets(){
       document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on')); c.classList.add('on');
       gi('ca1').value=p.a1; gi('ca2').value=p.a2;
       gi('cbg').value=p.bg; gi('ctx').value=p.tx;
-      syncCL(); cfg.accent1=p.a1; cfg.accent2=p.a2; cfg.bgColor=p.bg; cfg.textColor=p.tx;
+      syncCL();
+      ap().accent1=p.a1; ap().accent2=p.a2; ap().bgColor=p.bg; ap().textColor=p.tx;
       applyTheme();
     };
     row.appendChild(c);
@@ -1368,8 +1503,8 @@ function buildPresets(){
 }
 function doColor(){
   syncCL();
-  cfg.accent1=gi('ca1').value; cfg.accent2=gi('ca2').value;
-  cfg.bgColor=gi('cbg').value; cfg.textColor=gi('ctx').value;
+  ap().accent1=gi('ca1').value; ap().accent2=gi('ca2').value;
+  ap().bgColor=gi('cbg').value; ap().textColor=gi('ctx').value;
   applyTheme();
 }
 function syncCL(){
@@ -1377,11 +1512,11 @@ function syncCL(){
   gi('cbgv').textContent=gi('cbg').value; gi('ctxv').textContent=gi('ctx').value;
 }
 function applyTheme(){
-  const r=document.documentElement;
-  if(cfg.accent1){ r.style.setProperty('--accent',cfg.accent1); r.style.setProperty('--accent-soft',soften(cfg.accent1)); }
-  if(cfg.accent2) r.style.setProperty('--accent2',cfg.accent2);
-  if(cfg.bgColor){ r.style.setProperty('--bg',cfg.bgColor); document.body.style.background=cfg.bgColor; }
-  if(cfg.textColor) r.style.setProperty('--text',cfg.textColor);
+  const p=ap(); const r=document.documentElement;
+  if(p.accent1){ r.style.setProperty('--accent',p.accent1); r.style.setProperty('--accent-soft',soften(p.accent1)); }
+  if(p.accent2) r.style.setProperty('--accent2',p.accent2);
+  if(p.bgColor){ r.style.setProperty('--bg',p.bgColor); document.body.style.background=p.bgColor; }
+  if(p.textColor) r.style.setProperty('--text',p.textColor);
 }
 function soften(h){
   const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);
@@ -1396,11 +1531,11 @@ async function doUpload(e){
     const {ref,uploadBytes,getDownloadURL}=window._firestoreFns;
     const sr=ref(window._storage,`logos/${Date.now()}_${file.name}`);
     await uploadBytes(sr,file); const url=await getDownloadURL(sr);
-    cfg.logoUrl=url; sv('cfg-logo-url',url); showPrev(url);
+    ap().logoUrl=url; sv('cfg-logo-url',url); showPrev(url);
     m.textContent='✓ อัพโหลดสำเร็จ'; renderPublic(); toast('อัพโหลดโลโก้แล้ว','ok');
   }catch{
     const rd=new FileReader();
-    rd.onload=ev=>{ cfg.logoUrl=ev.target.result; sv('cfg-logo-url',''); showPrev(ev.target.result); renderPublic(); m.textContent='แสดงตัวอย่างแล้ว (local)'; };
+    rd.onload=ev=>{ ap().logoUrl=ev.target.result; sv('cfg-logo-url',''); showPrev(ev.target.result); renderPublic(); m.textContent='แสดงตัวอย่างแล้ว (local)'; };
     rd.readAsDataURL(file);
   }
 }
@@ -1413,9 +1548,10 @@ function showPrev(src){
 // ─── AUTH ───
 function doPw(){
   const pw=gi('adm-pw').value;
-  if(pw===cfg.password||pw==='admin123'){
+  if(pw===store.password||pw==='admin123'){
     gi('lock-wrap').style.display='none'; gi('adm-panel').style.display='block';
-    gi('pw-err').style.display='none'; fillForm(); renderLinks(); renderAnns();
+    gi('pw-err').style.display='none';
+    buildProfileTabs(); fillForm(); renderLinks(); renderAnns();
   } else {
     gi('pw-err').style.display='block';
     gi('adm-pw').style.borderColor='#ef4444';
@@ -1479,8 +1615,8 @@ function playLinkTransition(e, label, url) {
   const dest     = gi('co-dest');
 
   // ── 1. Setup logo ──
-  if(cfg.logoUrl){
-    logoImg.src = cfg.logoUrl;
+  if(ap().logoUrl){
+    logoImg.src = ap().logoUrl;
     logoImg.style.display = 'block';
     logoPh.style.display  = 'none';
   } else {
@@ -1554,18 +1690,19 @@ function playLinkTransition(e, label, url) {
 function doExportXlsx(){
   if(typeof XLSX==='undefined'){ toast('SheetJS ยังไม่โหลด กรุณารอสักครู่','err'); return; }
   collectForm();
+  const p=ap();
   const wb = XLSX.utils.book_new();
 
   // Sheet 1: Links
   const linksData = [['ลำดับ','ชื่อปุ่ม','URL','URL รูปภาพ']];
-  (cfg.links||[]).forEach((l,i)=>{ linksData.push([i+1, l.label||'', l.url||'', l.imgUrl||'']); });
+  (p.links||[]).forEach((l,i)=>{ linksData.push([i+1, l.label||'', l.url||'', l.imgUrl||'']); });
   const wsLinks = XLSX.utils.aoa_to_sheet(linksData);
   wsLinks['!cols']=[{wch:8},{wch:30},{wch:50},{wch:50}];
   XLSX.utils.book_append_sheet(wb, wsLinks, 'ลิงก์');
 
   // Sheet 2: Announcements
   const annData = [['ลำดับ','ข้อความประกาศ']];
-  (cfg.announcements||[]).forEach((a,i)=>{ annData.push([i+1, a]); });
+  (p.announcements||[]).forEach((a,i)=>{ annData.push([i+1, a]); });
   const wsAnn = XLSX.utils.aoa_to_sheet(annData);
   wsAnn['!cols']=[{wch:8},{wch:80}];
   XLSX.utils.book_append_sheet(wb, wsAnn, 'ประกาศ');
@@ -1573,34 +1710,34 @@ function doExportXlsx(){
   // Sheet 3: Settings
   const settingsData = [
     ['การตั้งค่า','ค่า'],
-    ['ชื่อเว็บไซต์', cfg.title||''],
-    ['คำอธิบาย', cfg.subtitle||''],
-    ['URL โลโก้', cfg.logoUrl||''],
-    ['สีหลัก (accent1)', cfg.accent1||''],
-    ['สีรอง (accent2)', cfg.accent2||''],
-    ['สีพื้นหลัง', cfg.bgColor||''],
-    ['สีข้อความ', cfg.textColor||''],
+    ['ชื่อโปรไฟล์', p.name||''],
+    ['ชื่อเว็บไซต์', p.title||''],
+    ['คำอธิบาย', p.subtitle||''],
+    ['URL โลโก้', p.logoUrl||''],
+    ['สีหลัก (accent1)', p.accent1||''],
+    ['สีรอง (accent2)', p.accent2||''],
+    ['สีพื้นหลัง', p.bgColor||''],
+    ['สีข้อความ', p.textColor||''],
   ];
   const wsSet = XLSX.utils.aoa_to_sheet(settingsData);
   wsSet['!cols']=[{wch:25},{wch:60}];
   XLSX.utils.book_append_sheet(wb, wsSet, 'ตั้งค่า');
 
-  const fname=`linktree_${new Date().toISOString().slice(0,10)}.xlsx`;
+  const fname=`linktree_${(p.name||'profile').replace(/\s/g,'_')}_${new Date().toISOString().slice(0,10)}.xlsx`;
   XLSX.writeFile(wb, fname);
   toast('Export สำเร็จ: '+fname, 'ok');
 }
 
 function doImportXlsx(e){
   const file=e.target.files[0]; if(!file) return;
-  e.target.value=''; // reset input
+  e.target.value='';
   if(typeof XLSX==='undefined'){ toast('SheetJS ยังไม่โหลด','err'); return; }
   const reader=new FileReader();
   reader.onload=ev=>{
     try{
       const wb=XLSX.read(ev.target.result,{type:'array'});
+      const p=ap();
       let imported=0;
-
-      // Import Links
       const wsLinks=wb.Sheets['ลิงก์'];
       if(wsLinks){
         const rows=XLSX.utils.sheet_to_json(wsLinks,{header:1});
@@ -1611,37 +1748,32 @@ function doImportXlsx(e){
             if(label||url) newLinks.push({label,url,imgUrl});
           }
         });
-        if(newLinks.length){ cfg.links=newLinks; imported++; }
+        if(newLinks.length){ p.links=newLinks; imported++; }
       }
-
-      // Import Announcements
       const wsAnn=wb.Sheets['ประกาศ'];
       if(wsAnn){
         const rows=XLSX.utils.sheet_to_json(wsAnn,{header:1});
         const newAnns=[];
         rows.slice(1).forEach(r=>{ if(r[1]) newAnns.push(String(r[1]).trim()); });
-        if(newAnns.length){ cfg.announcements=newAnns; imported++; }
+        if(newAnns.length){ p.announcements=newAnns; imported++; }
       }
-
-      // Import Settings
       const wsSet=wb.Sheets['ตั้งค่า'];
       if(wsSet){
         const rows=XLSX.utils.sheet_to_json(wsSet,{header:1});
         const map={};
         rows.slice(1).forEach(r=>{ if(r[0]&&r[1]!==undefined) map[String(r[0]).trim()]=String(r[1]||'').trim(); });
-        if(map['ชื่อเว็บไซต์'])   cfg.title      = map['ชื่อเว็บไซต์'];
-        if(map['คำอธิบาย'])      cfg.subtitle   = map['คำอธิบาย'];
-        if(map['URL โลโก้'])     cfg.logoUrl    = map['URL โลโก้'];
-        if(map['สีหลัก (accent1)']) cfg.accent1 = map['สีหลัก (accent1)'];
-        if(map['สีรอง (accent2)'])  cfg.accent2 = map['สีรอง (accent2)'];
-        if(map['สีพื้นหลัง'])    cfg.bgColor    = map['สีพื้นหลัง'];
-        if(map['สีข้อความ'])     cfg.textColor  = map['สีข้อความ'];
+        if(map['ชื่อโปรไฟล์'])  p.name      = map['ชื่อโปรไฟล์'];
+        if(map['ชื่อเว็บไซต์']) p.title     = map['ชื่อเว็บไซต์'];
+        if(map['คำอธิบาย'])     p.subtitle  = map['คำอธิบาย'];
+        if(map['URL โลโก้'])    p.logoUrl   = map['URL โลโก้'];
+        if(map['สีหลัก (accent1)']) p.accent1 = map['สีหลัก (accent1)'];
+        if(map['สีรอง (accent2)'])  p.accent2 = map['สีรอง (accent2)'];
+        if(map['สีพื้นหลัง'])   p.bgColor   = map['สีพื้นหลัง'];
+        if(map['สีข้อความ'])    p.textColor = map['สีข้อความ'];
         imported++;
       }
-
       if(imported===0){ toast('ไม่พบข้อมูลที่รู้จักในไฟล์ xlsx','err'); return; }
-
-      fillForm(); renderLinks(); renderAnns(); renderPublic(); applyTheme();
+      fillForm(); renderLinks(); renderAnns(); renderPublic(); applyTheme(); buildProfileTabs();
       toast(`Import สำเร็จ! (${imported} ชีท)`, 'ok');
     }catch(err){ toast('อ่านไฟล์ไม่ได้: '+err.message,'err'); }
   };
@@ -1649,14 +1781,74 @@ function doImportXlsx(e){
 }
 
 function doClearAll(){
-  if(!confirm('⚠️ ล้างข้อมูลทั้งหมด?\n\nระบบจะ Export ข้อมูลปัจจุบันให้ก่อน แล้วจึงลบลิงก์และประกาศทั้งหมด\n\nกด OK เพื่อยืนยัน')) return;
-  // auto-export first
+  if(!confirm(`⚠️ ล้างข้อมูลโปรไฟล์ "${ap().name||'นี้'}"?\n\nระบบจะ Export ข้อมูลปัจจุบันให้ก่อน แล้วจึงลบลิงก์และประกาศทั้งหมด\n\nกด OK เพื่อยืนยัน`)) return;
   doExportXlsx();
-  // then clear
-  cfg.links=[];
-  cfg.announcements=[];
+  ap().links=[];
+  ap().announcements=[];
   renderLinks(); renderAnns(); renderPublic();
   toast('ล้างข้อมูลแล้ว (ไฟล์ backup ถูก export แล้ว)','ok');
+}
+
+// ─── PROFILE MANAGEMENT ───
+function buildProfileTabs(){
+  const container=gi('ps-tabs'); if(!container) return;
+  container.innerHTML='';
+  // update header label
+  const hdr=gi('adm-profile-name');
+  if(hdr) hdr.textContent=ap().name||'โปรไฟล์หลัก';
+  Object.entries(store.profiles).forEach(([id, p])=>{
+    const btn=document.createElement('div'); btn.className='ps-tab'+(id===store.activeProfile?' active':'');
+    btn.dataset.id=id;
+    const liveIcon = id===store.activeProfile ? '<span class="ps-live-dot"></span>' : '';
+    btn.innerHTML=`${liveIcon}<span class="ps-tab-name" 
+      contenteditable="${id===store.activeProfile?'true':'false'}"
+      onblur="renameProfile('${id}',this.textContent)"
+      onclick="event.stopPropagation()"
+      style="outline:none;min-width:20px"
+      title="${id===store.activeProfile?'คลิกเพื่อแก้ชื่อ':''}"
+    >${esc(p.name||'โปรไฟล์')}</span>
+    <button class="ps-del" onclick="event.stopPropagation();deleteProfile('${id}')" title="ลบโปรไฟล์นี้">✕</button>`;
+    btn.addEventListener('click', ()=>switchProfile(id));
+    container.appendChild(btn);
+  });
+}
+
+function switchProfile(id){
+  if(!store.profiles[id]) return;
+  // save current form into current profile first
+  collectForm();
+  store.activeProfile=id;
+  fillForm(); renderLinks(); renderAnns(); renderPublic(); applyTheme(); buildProfileTabs();
+  toast(`เปลี่ยนเป็น: ${store.profiles[id].name||id}`, 'ok');
+}
+
+function doNewProfile(){
+  const name = prompt('ชื่อโปรไฟล์ใหม่ (เช่น โรงเรียน B):','');
+  if(!name||!name.trim()) return;
+  const id='p'+Date.now();
+  store.profiles[id]={ name:name.trim(), ...DEFAULT_PROFILE };
+  switchProfile(id);
+}
+
+function renameProfile(id, newName){
+  const n=(newName||'').trim();
+  if(!n||!store.profiles[id]) return;
+  store.profiles[id].name=n;
+  buildProfileTabs();
+  renderPublic();
+}
+
+function deleteProfile(id){
+  const keys=Object.keys(store.profiles);
+  if(keys.length<=1){ toast('ต้องมีอย่างน้อย 1 โปรไฟล์','err'); return; }
+  const name=store.profiles[id]?.name||id;
+  if(!confirm(`ลบโปรไฟล์ "${name}" ?\n\nข้อมูลลิงก์และประกาศทั้งหมดในโปรไฟล์นี้จะหายไป`)) return;
+  delete store.profiles[id];
+  if(store.activeProfile===id){
+    store.activeProfile=Object.keys(store.profiles)[0];
+  }
+  fillForm(); renderLinks(); renderAnns(); renderPublic(); applyTheme(); buildProfileTabs();
+  toast(`ลบโปรไฟล์ "${name}" แล้ว`,'ok');
 }
 
 // ─── UTILS ───
