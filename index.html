@@ -662,6 +662,24 @@ select option { background:var(--surface); }
 .logo-prev { width:72px; height:72px; border-radius:50%; margin:0 auto 10px; object-fit:cover; border:2px solid var(--border); }
 .logo-hint-txt { font-size:13px; color:var(--text-muted); font-family:'Kanit',sans-serif; font-weight:300; }
 
+/* GAS / Drive settings box */
+.gas-box {
+  margin-top:14px; border:1.5px solid var(--border); border-radius:var(--radius-sm);
+  background:var(--surface2); overflow:hidden;
+}
+.gas-box summary {
+  cursor:pointer; padding:11px 14px; font-size:13px; font-weight:500;
+  color:var(--text-mid); font-family:'Kanit',sans-serif; list-style:none;
+  display:flex; align-items:center; justify-content:space-between; user-select:none;
+}
+.gas-box summary::-webkit-details-marker { display:none; }
+.gas-box summary::after { content:'▾'; color:var(--text-muted); transition:transform 0.2s; }
+.gas-box[open] summary::after { transform:rotate(180deg); }
+.gas-box summary:hover { color:var(--accent); }
+.gas-inner { padding:4px 14px 14px; }
+.gas-note { font-size:11.5px; color:var(--text-muted); line-height:1.6; margin-bottom:12px; font-family:'Kanit',sans-serif; }
+.gas-uploading { color:var(--accent)!important; }
+
 /* ═══════════════════════════════════════
    ANNOUNCEMENTS ADMIN
 ═══════════════════════════════════════ */
@@ -752,10 +770,141 @@ select option { background:var(--surface); }
   display:none;
 }
 .lr-img-preview.has-img { display:block; }
+.lr-img-up {
+  flex-shrink:0; cursor:pointer; white-space:nowrap;
+  font-family:'Kanit',sans-serif; font-size:12px; font-weight:500;
+  padding:7px 12px; border-radius:9px;
+  border:1.5px solid var(--border); background:var(--surface);
+  color:var(--text-mid); transition:all 0.2s;
+}
+.lr-img-up:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+.lr-img-up.busy { opacity:0.6; pointer-events:none; }
+.lr-img-msg {
+  grid-column:1/-1; font-size:11px; margin-top:4px; padding-left:2px;
+  font-family:'Kanit',sans-serif; color:var(--text-muted);
+}
+.lr-img-msg.up { color:var(--accent); }
+.lr-img-msg.err { color:#e03131; }
 .lr-img-label {
   font-size:11px; color:var(--text-muted); white-space:nowrap;
   font-family:'Kanit',sans-serif;
 }
+
+/* ═══════════════════════════════════════
+   COPY-TEXT BUTTON CARD
+═══════════════════════════════════════ */
+/* public card variants for copy button */
+button.lk { width:100%; font:inherit; cursor:pointer; text-align:left; }
+.lk-textwrap { min-width:0; display:flex; flex-direction:column; gap:2px; }
+.lk-arr-copy { font-size:14px; }
+.lk:hover .lk-arr-copy span { transform:scale(1.12); }
+
+/* admin: copy-text toggle + textarea inside link rows */
+.lr-copy-toggle {
+  display:flex; align-items:center; justify-content:center; gap:6px; margin-top:6px;
+  background:transparent; border:1.5px dashed var(--border); border-radius:9px;
+  color:var(--text-muted); cursor:pointer; font-family:'Kanit',sans-serif;
+  font-size:12.5px; font-weight:500; padding:7px 12px; transition:all 0.2s; width:100%;
+  grid-column:1/-1;
+}
+.lr-copy-toggle:hover { border-color:var(--border-focus); color:var(--accent); background:var(--accent-soft); }
+.lr-copy-toggle.active { border-style:solid; border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+.lr-copy-wrap { margin-top:6px; grid-column:1/-1; }
+.lr-copy-wrap.hidden { display:none; }
+.lr-copy-ta {
+  width:100%; min-height:74px; resize:vertical; box-sizing:border-box;
+  font-family:'Kanit',sans-serif; font-size:13px; line-height:1.55; font-weight:300;
+  padding:9px 11px; border:1.5px solid var(--border); border-radius:10px;
+  background:var(--surface); color:var(--text-mid); transition:border-color 0.2s;
+}
+.lr-copy-ta:focus { outline:none; border-color:var(--border-focus); }
+.lr-copy-hint { font-size:11px; color:var(--text-muted); margin-top:4px; padding-left:2px; font-family:'Kanit',sans-serif; }
+
+/* ── Copy-text modal ── */
+.modal-overlay {
+  position:fixed; inset:0; z-index:9500;
+  background:rgba(26,31,54,0.45); backdrop-filter:blur(6px);
+  display:none; align-items:center; justify-content:center; padding:24px;
+  opacity:0; transition:opacity 0.25s;
+}
+.modal-overlay.show { display:flex; opacity:1; }
+.modal-box {
+  background:var(--surface); border:1.5px solid var(--border);
+  border-radius:24px; padding:30px 28px; width:100%; max-width:440px;
+  box-shadow:var(--sh-lg); position:relative; text-align:left;
+  transform:scale(0.94); transition:transform 0.3s cubic-bezier(.22,.68,0,1.2);
+}
+.modal-overlay.show .modal-box { transform:scale(1); }
+.modal-title { font-family:'Kanit',sans-serif; font-size:21px; font-weight:600; color:var(--accent); margin-bottom:6px; }
+.modal-sub { font-size:13px; color:var(--text-muted); margin-bottom:18px; font-weight:300; }
+.modal-close {
+  position:absolute; top:16px; right:16px; width:32px; height:32px;
+  border-radius:9px; border:1.5px solid var(--border); background:var(--surface2);
+  color:var(--text-muted); cursor:pointer; font-size:18px; line-height:1;
+  display:flex; align-items:center; justify-content:center; transition:all 0.2s;
+}
+.modal-close:hover { background:var(--accent3); color:#fff; border-color:var(--accent3); }
+.copy-modal-ta {
+  width:100%; box-sizing:border-box; min-height:130px; max-height:46vh; resize:vertical;
+  font-family:'Kanit',sans-serif; font-size:14px; line-height:1.6; font-weight:300;
+  padding:13px 15px; border:1.5px solid var(--border); border-radius:14px;
+  background:var(--surface2); color:var(--text); margin-bottom:14px; white-space:pre-wrap;
+}
+.copy-modal-ta:focus { outline:none; border-color:var(--border-focus); }
+.copy-modal-actions { display:flex; gap:10px; }
+.copy-modal-actions .btn { flex:1; justify-content:center; }
+
+/* ── Profile switch loading overlay ── */
+#switch-loading {
+  position:fixed; inset:0; z-index:8800;
+  background:rgba(240,244,255,0.72); backdrop-filter:blur(8px) saturate(1.4);
+  display:none; flex-direction:column; align-items:center; justify-content:center; gap:16px;
+  opacity:0; transition:opacity 0.2s;
+}
+#switch-loading.show { display:flex; opacity:1; }
+#switch-loading .spin-outer { width:46px; height:46px; }
+.switch-load-label {
+  font-family:'Kanit',sans-serif; font-size:14px; font-weight:500;
+  color:var(--accent); letter-spacing:0.5px;
+  animation:pls 1.5s ease-in-out infinite;
+}
+
+/* ── Top progress bar (profile switch status) ── */
+#switch-progress {
+  position:fixed; top:0; left:0; right:0; height:3px; z-index:9300;
+  background:transparent; pointer-events:none; opacity:0;
+  transition:opacity 0.25s;
+}
+#switch-progress.show { opacity:1; }
+#switch-progress .bar {
+  height:100%; width:0%;
+  background:linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+  box-shadow:0 0 10px rgba(59,91,219,0.5);
+  border-radius:0 3px 3px 0;
+  transition:width 0.2s ease;
+}
+/* shimmer while running */
+#switch-progress .bar::after {
+  content:''; position:absolute; top:0; right:0; height:100%; width:60px;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.65));
+}
+
+/* tab feedback while a switch is pending */
+.ps-tab.switching { opacity:0.55; pointer-events:none; }
+.ps-tab.target {
+  border-color:var(--accent); color:var(--accent); background:var(--accent-soft);
+  box-shadow:0 0 0 3px rgba(116,143,252,0.18);
+}
+
+/* ── Profile copy-link button ── */
+.ps-copy {
+  display:flex; align-items:center; gap:5px;
+  padding:7px 12px; border-radius:24px; cursor:pointer;
+  border:1.5px solid var(--border); background:var(--surface2);
+  font-size:12.5px; font-weight:500; color:var(--text-mid);
+  transition:all 0.22s; font-family:'Kanit',sans-serif; white-space:nowrap;
+}
+.ps-copy:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-soft); transform:translateY(-1px); }
 
 /* ═══════════════════════════════════════
    PROFILE SWITCHER
@@ -1040,11 +1189,47 @@ select option { background:var(--surface); }
 <!-- Toast -->
 <div id="toast"></div>
 
+<!-- Profile switch progress bar -->
+<div id="switch-progress"><div class="bar"></div></div>
+
+<!-- Profile switch loading -->
+<div id="switch-loading">
+  <div class="spin-outer"><div class="spin-inner"></div></div>
+  <div class="switch-load-label">กำลังสลับโปรไฟล์...</div>
+</div>
+
+<!-- Copy Text Modal -->
+<div class="modal-overlay" id="copy-modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeCopyModal()">×</button>
+    <div class="modal-title" id="copy-modal-title">คัดลอกข้อความ</div>
+    <div class="modal-sub">เลือกแล้วคัดลอก หรือกดปุ่ม "คัดลอกข้อความ" ด้านล่าง</div>
+    <textarea class="copy-modal-ta" id="copy-modal-ta" readonly onclick="this.select()"></textarea>
+    <div class="copy-modal-actions">
+      <button class="btn btn-o btn-sm" onclick="closeCopyModal()">ปิด</button>
+      <button class="btn btn-p btn-sm" id="copy-modal-btn" onclick="doCopyModalText()"><span>📋 คัดลอกข้อความ</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- Unsaved-changes Modal -->
+<div class="modal-overlay" id="unsaved-modal">
+  <div class="modal-box">
+    <div class="modal-title">⚠️ มีการเปลี่ยนแปลงที่ยังไม่บันทึก</div>
+    <div class="modal-sub">คุณต้องการบันทึกก่อนออกจากเมนูตั้งค่าหรือไม่?</div>
+    <div class="copy-modal-actions" style="flex-wrap:wrap">
+      <button class="btn btn-o btn-sm" onclick="unsavedChoice('cancel')">ยกเลิก</button>
+      <button class="btn btn-o btn-sm" onclick="unsavedChoice('discard')">ออกโดยไม่บันทึก</button>
+      <button class="btn btn-p btn-sm" onclick="unsavedChoice('save')"><span>💾 บันทึกแล้วออก</span></button>
+    </div>
+  </div>
+</div>
+
 <!-- Navbar -->
 <nav>
   <div class="nav-pill">
-    <button class="t-btn active" onclick="switchTab('public',this)"><span>🌐 หน้าหลัก</span></button>
-    <button class="t-btn" onclick="switchTab('admin',this)"><span>⚙ จัดการ</span></button>
+    <button class="t-btn active" onclick="navTo('public',this)"><span>🌐 หน้าหลัก</span></button>
+    <button class="t-btn" onclick="navTo('admin',this)"><span>⚙ จัดการ</span></button>
   </div>
 </nav>
 
@@ -1116,6 +1301,8 @@ select option { background:var(--surface); }
         <div class="ps-bar" id="ps-bar">
           <span class="ps-label">🏫 โปรไฟล์</span>
           <div class="ps-tabs" id="ps-tabs"></div>
+          <button class="ps-copy" onclick="copyProfileLink()" title="คัดลอกลิงก์สำหรับโปรไฟล์นี้">⧉ คัดลอกลิงก์</button>
+          <button class="ps-copy" onclick="openProfileLink()" title="เปิดดูหน้าสาธารณะของโปรไฟล์นี้">↗ เปิดดู</button>
           <button class="ps-new" onclick="doNewProfile()">＋ เพิ่มโปรไฟล์</button>
         </div>
       </div>
@@ -1141,6 +1328,19 @@ select option { background:var(--surface); }
         </div>
         <div id="up-msg" style="font-size:12px;color:var(--text-muted);text-align:center;margin-bottom:12px;font-family:'Kanit',sans-serif"></div>
         <div class="fg"><label class="fl">หรือวาง URL รูปภาพ</label><input type="url" id="cfg-logo-url" placeholder="https://..."></div>
+
+        <!-- GAS / Drive upload settings -->
+        <details class="gas-box" id="gas-box">
+          <summary>⚙️ ตั้งค่าอัปโหลดขึ้น Google Drive (GAS)</summary>
+          <div class="gas-inner">
+            <div class="gas-note">ใส่ค่าเพื่ออัปโหลดรูปจากเครื่องขึ้น Google Drive ได้โดยตรง · ดูวิธีสร้างได้จากไฟล์ Code.gs</div>
+            <div class="fg"><label class="fl">GAS Web App URL (/exec)</label>
+              <input type="url" id="cfg-gas" placeholder="https://script.google.com/macros/s/AKfy.../exec" onblur="checkGas()"></div>
+            <div class="fg" style="margin-bottom:8px"><label class="fl">Google Drive Folder ID</label>
+              <input type="text" id="cfg-folder" placeholder="เช่น 1AbC...xyz (เว้นว่าง = My Drive)"></div>
+            <div id="gas-status" style="font-size:12px;font-weight:500;font-family:'Kanit',sans-serif;min-height:16px"></div>
+          </div>
+        </details>
       </div>
 
       <!-- Theme -->
@@ -1202,7 +1402,7 @@ select option { background:var(--surface); }
 
     <div class="save-row">
       <button class="btn btn-o" onclick="loadConfig()">↺ รีเฟรช</button>
-      <button class="btn btn-p" id="save-btn" onclick="doSave()">
+      <button class="btn btn-p" id="save-btn" onclick="doSave(false,true)">
         <div class="btn-shine"></div>
         <span>บันทึกการเปลี่ยนแปลง</span>
       </button>
@@ -1221,10 +1421,20 @@ const DEFAULT_PROFILE = {
 let store = {
   password: 'admin123',
   activeProfile: 'p1',
+  gasEndpoint: '',      // GAS Web App URL (/exec) — ตั้งในแผงจัดการ
+  driveFolderId: '',    // Google Drive Folder ID ปลายทาง
   profiles: {
     p1: { name:'โปรไฟล์หลัก', ...DEFAULT_PROFILE }
   }
 };
+
+// ─── DRIVE UPLOAD CONFIG (mirrors store) ───
+let DRIVE_UPLOAD_ENDPOINT = '';
+let DRIVE_FOLDER_ID = '';
+function syncDriveCfg(){
+  DRIVE_UPLOAD_ENDPOINT = store.gasEndpoint || '';
+  DRIVE_FOLDER_ID = store.driveFolderId || '';
+}
 
 // helper: get active profile data
 function ap(){ return store.profiles[store.activeProfile] || Object.values(store.profiles)[0]; }
@@ -1235,6 +1445,27 @@ function getCfg(){
 }
 // shorthand write to active profile
 function setAP(key,val){ ap()[key]=val; }
+
+// ─── PUBLIC VIEW PROFILE (driven by URL) ───
+// Each profile has its own shareable link: ...page.html?p=<profileId>
+// The public page shows the profile from the URL, independent of which
+// profile the admin is editing. Falls back to store.activeProfile.
+function getViewProfileId(){
+  const params=new URLSearchParams(location.search);
+  const pid=params.get('p');
+  if(pid && store.profiles[pid]) return pid;
+  return store.activeProfile;
+}
+// profile data shown on the public page
+function pubProfile(){
+  const id=getViewProfileId();
+  return store.profiles[id] || ap();
+}
+// build the shareable URL for a given profile id
+function profileLink(id){
+  const base=location.origin+location.pathname;
+  return `${base}?p=${encodeURIComponent(id)}`;
+}
 
 // ─── PRESETS ───
 const PRESETS = [
@@ -1260,6 +1491,9 @@ window.addEventListener('firebaseReady', async()=>{
       if(d.profiles) store.profiles=d.profiles;
       if(d.activeProfile) store.activeProfile=d.activeProfile;
       if(d.password) store.password=d.password;
+      if(d.gasEndpoint!==undefined) store.gasEndpoint=d.gasEndpoint;
+      if(d.driveFolderId!==undefined) store.driveFolderId=d.driveFolderId;
+      syncDriveCfg();
       renderPublic();
     }
   });
@@ -1293,24 +1527,30 @@ async function loadConfig(){
         if(d.activeProfile) store.activeProfile=d.activeProfile;
         if(d.password) store.password=d.password;
       }
+      if(d.gasEndpoint!==undefined) store.gasEndpoint=d.gasEndpoint;
+      if(d.driveFolderId!==undefined) store.driveFolderId=d.driveFolderId;
     } else {
       await doSave(true);
     }
+    syncDriveCfg();
     fillForm(); renderPublic(); renderLinks(); renderAnns(); applyTheme(); buildProfileTabs();
   }catch(e){ toast('โหลดข้อมูลไม่สำเร็จ: '+e.message,'err'); }
 }
 
-async function doSave(silent=false){
+async function doSave(silent=false, goHome=false){
   try{
     collectForm();
     const {doc,setDoc}=window._firestoreFns;
     await setDoc(doc(window._db,'linktree','config'), store);
     renderPublic(); applyTheme();
+    clearDirty();
     if(!silent){
       const b=gi('save-btn');
       b.classList.add('flashed'); setTimeout(()=>b.classList.remove('flashed'),900);
       toast('บันทึกเรียบร้อยแล้ว','ok');
     }
+    // หลังกด "บันทึกการเปลี่ยนแปลง" → กลับหน้าหลัก
+    if(goHome){ goToPublic(); }
   }catch(e){ toast('เกิดข้อผิดพลาด: '+e.message,'err'); }
 }
 
@@ -1321,6 +1561,10 @@ function collectForm(){
   p.subtitle = gi('cfg-sub').value;
   const pw=gi('cfg-pw').value; if(pw) store.password=pw;
   const lu=gi('cfg-logo-url').value; if(lu) p.logoUrl=lu;
+  // GAS / Drive upload settings (global, not per-profile)
+  if(gi('cfg-gas')) store.gasEndpoint = gi('cfg-gas').value.trim();
+  if(gi('cfg-folder')) store.driveFolderId = gi('cfg-folder').value.trim();
+  syncDriveCfg();
   p.accent1   = gi('ca1').value;
   p.accent2   = gi('ca2').value;
   p.bgColor   = gi('cbg').value;
@@ -1329,13 +1573,15 @@ function collectForm(){
   document.querySelectorAll('.lr-data').forEach(r=>{
     const l=r.querySelector('.ll').value.trim(),u=r.querySelector('.lu').value.trim();
     const img=r.querySelector('.li')?.value.trim()||'';
-    if(l||u) p.links.push({label:l,url:u,imgUrl:img});
+    const copyText=r.querySelector('.lc-copy')?.value.trim()||'';
+    if(l||u||copyText) p.links.push({label:l,url:u,imgUrl:img,copyText});
   });
 }
 function fillForm(){
   const p=ap();
   sv('cfg-title',p.title||''); sv('cfg-sub',p.subtitle||'');
   sv('cfg-logo-url',p.logoUrl||'');
+  sv('cfg-gas',store.gasEndpoint||''); sv('cfg-folder',store.driveFolderId||'');
   gi('ca1').value=p.accent1||'#3b5bdb'; gi('ca2').value=p.accent2||'#4dabf7';
   gi('cbg').value=p.bgColor||'#f0f4ff'; gi('ctx').value=p.textColor||'#1a1f36';
   syncCL();
@@ -1348,14 +1594,15 @@ function fillForm(){
 
 // ─── RENDER PUBLIC ───
 function renderPublic(){
-  const p=ap();
+  const p=pubProfile();
   gi('pub-title').textContent=p.title||'ลิงก์ของฉัน';
   document.title=p.title||'LinkTree';
   gi('pub-sub').textContent=p.subtitle||'';
-  // profile badge — show if more than 1 profile exists
+  // profile badge — show the viewed profile name when relevant
   const badge=gi('pub-profile-badge'), badgeName=gi('pub-profile-name');
   const profileCount=Object.keys(store.profiles).length;
-  if(profileCount>1 && p.name){
+  const hasParam=new URLSearchParams(location.search).has('p');
+  if((profileCount>1 || hasParam) && p.name){
     badgeName.textContent=p.name;
     badge.style.display='inline-flex';
   } else { badge.style.display='none'; }
@@ -1375,16 +1622,25 @@ function renderPublic(){
   // links
   const lc=gi('pub-links'); lc.innerHTML='';
   (p.links||[]).forEach((l,i)=>{
-    if(!l.label&&!l.url) return;
-    const a=document.createElement('a'); a.className='lk';
-    a.href=l.url||'#';
-    a.rel='noopener';
+    if(!l.label&&!l.url&&!l.copyText) return;
+    const isCopy = !!(l.copyText&&l.copyText.trim()) && !l.url;
+    const a=document.createElement(isCopy?'button':'a');
+    a.className='lk'+(isCopy?' lk-copy':'');
+    if(isCopy){ a.type='button'; } else { a.href=l.url||'#'; a.rel='noopener'; }
     a.style.animationDelay=(i*0.07)+'s';
     const thumbHtml = l.imgUrl
       ? `<img class="lk-thumb" src="${esc(l.imgUrl)}" alt="" loading="lazy" onerror="this.style.display='none'">`
       : '';
-    a.innerHTML=`<span class="lk-left">${thumbHtml}<span class="lk-label">${esc(l.label||l.url)}</span></span><span class="lk-arr"><span>→</span></span>`;
-    if(l.url){
+    const arr = isCopy
+      ? '<span class="lk-arr lk-arr-copy"><span>📋</span></span>'
+      : '<span class="lk-arr"><span>→</span></span>';
+    a.innerHTML=`<span class="lk-left">${thumbHtml}<span class="lk-label">${esc(l.label||l.url||'คัดลอกข้อความ')}</span></span>${arr}`;
+    if(isCopy){
+      a.addEventListener('click', e=>{
+        e.preventDefault();
+        openCopyModal(l.label||'ข้อความ', l.copyText);
+      });
+    } else if(l.url){
       a.addEventListener('click', e=>{
         e.preventDefault();
         playLinkTransition(e, l.label||l.url, l.url);
@@ -1421,6 +1677,19 @@ function appendLR(l={},i=0){
       <img class="lr-img-preview ${hasImg}" src="${imgVal}" alt="">
       <input class="li" type="url" placeholder="🖼 URL รูปภาพกำกับปุ่ม (ไม่บังคับ)" value="${imgVal}"
         oninput="previewLinkImg(this)" style="flex:1;margin:0;font-size:12px;padding:7px 10px">
+      <label class="lr-img-up" title="อัปโหลดรูปจากเครื่อง">
+        ⬆ อัป
+        <input type="file" accept=".png,.jpg,.jpeg,.webp,.gif" style="display:none"
+          onchange="doUploadLinkImg(this)">
+      </label>
+    </div>
+    <div class="lr-img-msg" style="display:none"></div>
+    <button type="button" class="lr-copy-toggle ${l.copyText?'active':''}" onclick="toggleCopyField(this)">
+      📋 <span>${l.copyText?'แก้ไขข้อความสำหรับคัดลอก':'เพิ่มข้อความสำหรับคัดลอก'}</span>
+    </button>
+    <div class="lr-copy-wrap ${l.copyText?'':'hidden'}">
+      <textarea class="lc-copy lr-copy-ta" placeholder="วางข้อความที่ต้องการให้คัดลอก เช่น โจทย์ คำสั่ง โค้ด ลิงก์ ฯลฯ">${esc(l.copyText||'')}</textarea>
+      <div class="lr-copy-hint">เมื่อกรอกช่องนี้ ปุ่มจะกลายเป็นปุ่ม "คัดลอกข้อความ" — ผู้ใช้กดแล้วจะมีหน้าต่างให้คัดลอก (ไม่จำเป็นต้องมี URL)</div>
     </div>`;
   gi('link-list').appendChild(d);
 }
@@ -1512,7 +1781,12 @@ function syncCL(){
   gi('cbgv').textContent=gi('cbg').value; gi('ctxv').textContent=gi('ctx').value;
 }
 function applyTheme(){
-  const p=ap(); const r=document.documentElement;
+  // When admin panel is open & editing, preview the profile being edited.
+  // Otherwise (public page), theme follows the profile shown to visitors.
+  const adminEditing = gi('page-admin')?.classList.contains('active')
+                    && gi('adm-panel')?.style.display!=='none';
+  const p = adminEditing ? ap() : pubProfile();
+  const r=document.documentElement;
   if(p.accent1){ r.style.setProperty('--accent',p.accent1); r.style.setProperty('--accent-soft',soften(p.accent1)); }
   if(p.accent2) r.style.setProperty('--accent2',p.accent2);
   if(p.bgColor){ r.style.setProperty('--bg',p.bgColor); document.body.style.background=p.bgColor; }
@@ -1523,19 +1797,107 @@ function soften(h){
   return `rgba(${r},${g},${b},0.09)`;
 }
 
-// ─── LOGO ───
+// ─── DRIVE UPLOAD — no-cors + key + poll (อัปจากเครื่อง → Google Drive) ───
+// คืนค่า URL รูปถาวร · onProgress(pct) สำหรับแสดงสถานะ
+async function uploadToDrive(fileOrBlob, filenamePrefix, onProgress){
+  const prog = typeof onProgress==='function' ? onProgress : ()=>{};
+  if(!DRIVE_UPLOAD_ENDPOINT) throw new Error('ยังไม่ได้ตั้งค่า GAS — เปิด "ตั้งค่าอัปโหลดขึ้น Google Drive"');
+  const MAX=10*1024*1024;
+  if(fileOrBlob.size>MAX) throw new Error('ไฟล์ใหญ่เกิน 10MB (ข้อจำกัด Apps Script)');
+  prog(2);
+  const b64=await new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=ev=>res(ev.target.result.split(',')[1]);
+    r.onerror=rej; r.readAsDataURL(fileOrBlob);
+  });
+  prog(8);
+  const key=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():`${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  // เติม prefix ชื่อไฟล์: <ชื่อโปรไฟล์>_<YYYYMMDD_HHMM>_<ชื่อเดิม>
+  const baseName=(fileOrBlob.name||`upload_${Date.now()}`);
+  const fileName=(filenamePrefix||'')+baseName;
+  const mimeType=fileOrBlob.type||'application/octet-stream';
+  const payload=JSON.stringify({key, filename:fileName, mimeType, data:b64, folderId:DRIVE_FOLDER_ID});
+  // (1) POST no-cors (ไม่ throw แม้ตอบ opaque)
+  let simP=8; const simTimer=setInterval(()=>{ simP=Math.min(50,simP+3); prog(simP); },220);
+  try{ await fetch(DRIVE_UPLOAD_ENDPOINT,{ method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:payload }); }
+  catch(e){ /* no-cors ไม่ throw */ }
+  clearInterval(simTimer); prog(52);
+  // (2) Poll GET ?key= เพื่อดึงลิงก์
+  for(let i=0;i<25;i++){
+    await new Promise(r=>setTimeout(r,1200));
+    prog(Math.min(92, 52+(i/25)*40));
+    try{
+      const res=await fetch(`${DRIVE_UPLOAD_ENDPOINT}?key=${encodeURIComponent(key)}&t=${Date.now()}`);
+      if(!res.ok) continue;
+      const json=await res.json();
+      if(json && json.error) throw new Error(json.error);
+      if(json && (json.url||json.id)){ prog(100); return json.url || `https://drive.google.com/thumbnail?id=${json.id}&sz=w1600`; }
+    }catch(e){ if(e.message && /[฀-๿]/.test(e.message)) throw e; }
+  }
+  throw new Error('Upload timeout — GAS ไม่ตอบสนอง ตรวจ URL และ Deploy (Anyone)');
+}
+
+// สร้าง prefix ชื่อไฟล์จากชื่อโปรไฟล์ + วันเวลา
+function makeFilePrefix(){
+  const name=(ap().name||'profile').replace(/[\\/:*?"<>|]+/g,'').replace(/\s+/g,'-').slice(0,40);
+  const d=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const stamp=`${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
+  return `${name}_${stamp}_`;
+}
+
+// ─── ตรวจสุขภาพ GAS ───
+async function checkGas(){
+  const st=gi('gas-status'); const url=gi('cfg-gas').value.trim();
+  if(!st) return;
+  if(!url){ st.textContent=''; store.gasEndpoint=''; syncDriveCfg(); return; }
+  store.gasEndpoint=url; syncDriveCfg();
+  st.style.color='var(--text-muted)'; st.textContent='⏳ กำลังตรวจสอบ GAS…';
+  try{
+    const res=await fetch(`${url}?t=${Date.now()}`);
+    const j=await res.json();
+    if(j.driveOk){ st.style.color='#2f9e44'; st.textContent='✓ '+(j.message||'พร้อมใช้งาน')+' · โฟลเดอร์: '+(j.folder||'-'); }
+    else { st.style.color='#c92a2a'; st.textContent='⚠️ '+(j.message||'เข้าถึง Drive ไม่ได้'); }
+  }catch(e){ st.style.color='#c92a2a'; st.textContent='⚠️ เชื่อมต่อ GAS ไม่ได้ — ตรวจ URL และ Deploy (Anyone can access)'; }
+}
+
+// ─── LOGO UPLOAD (จากเครื่อง → GAS/Drive, มี fallback) ───
 async function doUpload(e){
   const file=e.target.files[0]; if(!file) return;
-  const m=gi('up-msg'); m.textContent='กำลังอัพโหลด...';
+  e.target.value='';
+  const m=gi('up-msg');
+  // โหมด 1: มี GAS → อัปขึ้น Drive (ลิงก์ถาวร) พร้อม prefix ชื่อไฟล์
+  if(DRIVE_UPLOAD_ENDPOINT){
+    // pull current folder id from the field in case it changed but not saved
+    if(gi('cfg-folder')){ store.driveFolderId=gi('cfg-folder').value.trim(); syncDriveCfg(); }
+    m.classList.add('gas-uploading'); m.textContent='⬆ กำลังอัปโหลดขึ้น Drive… 0%';
+    try{
+      const url=await uploadToDrive(file, makeFilePrefix(), pct=>{
+        m.textContent=`⬆ กำลังอัปโหลดขึ้น Drive… ${Math.round(pct)}%`;
+      });
+      ap().logoUrl=url; sv('cfg-logo-url',url); showPrev(url);
+      m.classList.remove('gas-uploading'); m.textContent='✓ อัปโหลดขึ้น Drive สำเร็จ';
+      renderPublic(); toast('อัปโหลดรูปขึ้น Drive แล้ว','ok');
+      return;
+    }catch(err){
+      m.classList.remove('gas-uploading');
+      m.textContent='⚠️ '+err.message;
+      toast('อัปขึ้น Drive ไม่สำเร็จ: '+err.message,'err');
+      // ตกลงมาใช้ fallback ด้านล่าง
+    }
+  }
+  // โหมด 2: ไม่มี GAS หรือ GAS พลาด → ลอง Firebase Storage
   try{
     const {ref,uploadBytes,getDownloadURL}=window._firestoreFns;
+    m.textContent='กำลังอัพโหลด...';
     const sr=ref(window._storage,`logos/${Date.now()}_${file.name}`);
     await uploadBytes(sr,file); const url=await getDownloadURL(sr);
     ap().logoUrl=url; sv('cfg-logo-url',url); showPrev(url);
     m.textContent='✓ อัพโหลดสำเร็จ'; renderPublic(); toast('อัพโหลดโลโก้แล้ว','ok');
   }catch{
+    // โหมด 3: แสดงตัวอย่าง local (data URL, ไม่ถาวร)
     const rd=new FileReader();
-    rd.onload=ev=>{ ap().logoUrl=ev.target.result; sv('cfg-logo-url',''); showPrev(ev.target.result); renderPublic(); m.textContent='แสดงตัวอย่างแล้ว (local)'; };
+    rd.onload=ev=>{ ap().logoUrl=ev.target.result; sv('cfg-logo-url',''); showPrev(ev.target.result); renderPublic(); m.textContent='แสดงตัวอย่างแล้ว (local) — ตั้งค่า GAS เพื่อบันทึกถาวร'; };
     rd.readAsDataURL(file);
   }
 }
@@ -1552,6 +1914,7 @@ function doPw(){
     gi('lock-wrap').style.display='none'; gi('adm-panel').style.display='block';
     gi('pw-err').style.display='none';
     buildProfileTabs(); fillForm(); renderLinks(); renderAnns();
+    bindDirtyTracking(); clearDirty();   // เริ่มจับการเปลี่ยนแปลงใหม่
   } else {
     gi('pw-err').style.display='block';
     gi('adm-pw').style.borderColor='#ef4444';
@@ -1560,12 +1923,77 @@ function doPw(){
   }
 }
 function doLogout(){
-  gi('lock-wrap').style.display='flex'; gi('adm-panel').style.display='none';
-  gi('adm-pw').value=''; gi('pw-err').style.display='none';
-  switchTab('public',document.querySelector('.t-btn'));
+  // ออกจากระบบ = ออกจากเมนูตั้งค่า → ผ่าน guard เช่นกัน
+  leaveAdminGuard(()=>{
+    gi('lock-wrap').style.display='flex'; gi('adm-panel').style.display='none';
+    gi('adm-pw').value=''; gi('pw-err').style.display='none';
+    switchTab('public',document.querySelector('.t-btn'));
+  });
+}
+
+// ─── UNSAVED-CHANGES GUARD ───
+let _dirty=false;
+let _dirtyBound=false;
+let _pendingLeave=null;   // callback to run after the modal resolves
+
+function markDirty(){ _dirty=true; }
+function clearDirty(){ _dirty=false; }
+function isAdminEditing(){
+  return gi('page-admin')?.classList.contains('active')
+      && gi('adm-panel')?.style.display!=='none';
+}
+// attach change listeners on the admin panel once
+function bindDirtyTracking(){
+  if(_dirtyBound) return;
+  const panel=gi('adm-panel'); if(!panel) return;
+  const onChange=e=>{
+    // ignore the password field for the lock screen, and the switch UI itself
+    if(isAdminEditing()) markDirty();
+  };
+  panel.addEventListener('input', onChange, true);
+  panel.addEventListener('change', onChange, true);
+  _dirtyBound=true;
+}
+
+// run `action` only if it's safe to leave admin; otherwise prompt to save
+function leaveAdminGuard(action){
+  if(isAdminEditing() && _dirty){
+    _pendingLeave=action;
+    gi('unsaved-modal').classList.add('show');
+  } else {
+    action();
+  }
+}
+async function unsavedChoice(choice){
+  const m=gi('unsaved-modal');
+  if(choice==='cancel'){ m.classList.remove('show'); _pendingLeave=null; return; }
+  if(choice==='save'){
+    await doSave(false,false);   // บันทึก (ไม่ต้อง goHome ที่นี่ — เดี๋ยว action พาไปเอง)
+  } else if(choice==='discard'){
+    clearDirty();
+  }
+  m.classList.remove('show');
+  const act=_pendingLeave; _pendingLeave=null;
+  if(typeof act==='function') act();
+}
+gi('unsaved-modal').addEventListener('click',e=>{ if(e.target.id==='unsaved-modal') unsavedChoice('cancel'); });
+
+// helper: go to the public tab and sync its nav button highlight
+function goToPublic(){
+  const homeBtn=document.querySelector('.t-btn');
+  switchTab('public', homeBtn);
 }
 
 // ─── TABS ───
+// navTo = นำทางผ่าน guard (เตือนบันทึกถ้าออกจากตั้งค่าโดยมีการแก้ไข)
+function navTo(tab,btn){
+  // กำลังจะออกจากแผงตั้งค่าไปหน้าหลัก และมีการแก้ไขค้างอยู่
+  if(tab!=='admin' && isAdminEditing() && _dirty){
+    leaveAdminGuard(()=>switchTab(tab,btn));
+    return;
+  }
+  switchTab(tab,btn);
+}
 function switchTab(tab,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.t-btn').forEach(b=>b.classList.remove('active'));
@@ -1604,6 +2032,63 @@ function previewLinkImg(input){
   else { prev.src=''; prev.classList.remove('has-img'); }
 }
 
+// อัปโหลดรูปกำกับปุ่ม (การ์ดลิงก์) จากเครื่อง → GAS/Drive → เติม URL ลงช่อง
+async function doUploadLinkImg(fileInput){
+  const file=fileInput.files[0]; if(!file) return;
+  fileInput.value='';
+  const row=fileInput.closest('.lr');
+  const urlInput=row.querySelector('.li');
+  const prev=row.querySelector('.lr-img-preview');
+  const lbl=row.querySelector('.lr-img-up');
+  const msg=row.querySelector('.lr-img-msg');
+  const setMsg=(t,cls='')=>{ if(msg){ msg.style.display='block'; msg.className='lr-img-msg '+cls; msg.textContent=t; } };
+
+  if(DRIVE_UPLOAD_ENDPOINT){
+    if(gi('cfg-folder')){ store.driveFolderId=gi('cfg-folder').value.trim(); syncDriveCfg(); }
+    lbl&&lbl.classList.add('busy');
+    setMsg('⬆ กำลังอัปโหลดขึ้น Drive… 0%','up');
+    try{
+      const url=await uploadToDrive(file, makeFilePrefix()+'btn_', pct=>setMsg(`⬆ กำลังอัปโหลด… ${Math.round(pct)}%`,'up'));
+      urlInput.value=url; previewLinkImg(urlInput);
+      markDirty();
+      setMsg('✓ อัปโหลดสำเร็จ','up'); toast('อัปโหลดรูปปุ่มขึ้น Drive แล้ว','ok');
+    }catch(err){
+      setMsg('⚠️ '+err.message,'err'); toast('อัปไม่สำเร็จ: '+err.message,'err');
+    }finally{ lbl&&lbl.classList.remove('busy'); }
+    return;
+  }
+  // ไม่มี GAS → แสดงตัวอย่าง local (data URL — ไม่ถาวร)
+  const rd=new FileReader();
+  rd.onload=ev=>{ urlInput.value=ev.target.result; previewLinkImg(urlInput); markDirty(); setMsg('แสดงตัวอย่าง (local) — ตั้งค่า GAS เพื่อบันทึกถาวร'); };
+  rd.readAsDataURL(file);
+}
+
+// ─── COPY-TEXT FIELD (admin) ───
+function toggleCopyField(btn){
+  const wrap=btn.nextElementSibling;
+  const open=wrap.classList.toggle('hidden')===false;
+  btn.classList.toggle('active', open);
+  btn.querySelector('span').textContent = open ? 'แก้ไขข้อความสำหรับคัดลอก' : 'เพิ่มข้อความสำหรับคัดลอก';
+  if(open) wrap.querySelector('.lc-copy')?.focus();
+}
+
+// ─── COPY-TEXT MINI MODAL (public) ───
+function openCopyModal(title, text){
+  gi('copy-modal-title').textContent = title || 'คัดลอกข้อความ';
+  const ta=gi('copy-modal-ta'); ta.value = text || '';
+  gi('copy-modal-btn').querySelector('span').textContent='📋 คัดลอกข้อความ';
+  gi('copy-modal').classList.add('show');
+}
+function closeCopyModal(){ gi('copy-modal').classList.remove('show'); }
+function doCopyModalText(){
+  const ta=gi('copy-modal-ta'); const text=ta.value;
+  const done=()=>{ gi('copy-modal-btn').querySelector('span').textContent='✓ คัดลอกแล้ว'; toast('คัดลอกข้อความแล้ว','ok'); };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>{ ta.select(); document.execCommand('copy'); done(); });
+  } else { ta.select(); document.execCommand('copy'); done(); }
+}
+document.getElementById('copy-modal').addEventListener('click',e=>{ if(e.target.id==='copy-modal') closeCopyModal(); });
+
 // ─── CLICK TRANSITION ───
 function playLinkTransition(e, label, url) {
   const overlay  = gi('click-overlay');
@@ -1615,8 +2100,9 @@ function playLinkTransition(e, label, url) {
   const dest     = gi('co-dest');
 
   // ── 1. Setup logo ──
-  if(ap().logoUrl){
-    logoImg.src = ap().logoUrl;
+  const _vp=pubProfile();
+  if(_vp.logoUrl){
+    logoImg.src = _vp.logoUrl;
     logoImg.style.display = 'block';
     logoPh.style.display  = 'none';
   } else {
@@ -1694,10 +2180,10 @@ function doExportXlsx(){
   const wb = XLSX.utils.book_new();
 
   // Sheet 1: Links
-  const linksData = [['ลำดับ','ชื่อปุ่ม','URL','URL รูปภาพ']];
-  (p.links||[]).forEach((l,i)=>{ linksData.push([i+1, l.label||'', l.url||'', l.imgUrl||'']); });
+  const linksData = [['ลำดับ','ชื่อปุ่ม','URL','URL รูปภาพ','ข้อความคัดลอก']];
+  (p.links||[]).forEach((l,i)=>{ linksData.push([i+1, l.label||'', l.url||'', l.imgUrl||'', l.copyText||'']); });
   const wsLinks = XLSX.utils.aoa_to_sheet(linksData);
-  wsLinks['!cols']=[{wch:8},{wch:30},{wch:50},{wch:50}];
+  wsLinks['!cols']=[{wch:8},{wch:30},{wch:50},{wch:50},{wch:60}];
   XLSX.utils.book_append_sheet(wb, wsLinks, 'ลิงก์');
 
   // Sheet 2: Announcements
@@ -1744,8 +2230,8 @@ function doImportXlsx(e){
         const newLinks=[];
         rows.slice(1).forEach(r=>{
           if(r.length>=2){
-            const label=String(r[1]||'').trim(), url=String(r[2]||'').trim(), imgUrl=String(r[3]||'').trim();
-            if(label||url) newLinks.push({label,url,imgUrl});
+            const label=String(r[1]||'').trim(), url=String(r[2]||'').trim(), imgUrl=String(r[3]||'').trim(), copyText=String(r[4]||'').trim();
+            if(label||url||copyText) newLinks.push({label,url,imgUrl,copyText});
           }
         });
         if(newLinks.length){ p.links=newLinks; imported++; }
@@ -1786,40 +2272,117 @@ function doClearAll(){
   ap().links=[];
   ap().announcements=[];
   renderLinks(); renderAnns(); renderPublic();
+  markDirty();
   toast('ล้างข้อมูลแล้ว (ไฟล์ backup ถูก export แล้ว)','ok');
 }
 
 // ─── PROFILE MANAGEMENT ───
+// Event delegation: ONE listener bound once on the container survives every
+// rebuild, so tab clicks never land on a stale node.
+let _psDelegationBound=false;
+function bindProfileDelegation(){
+  if(_psDelegationBound) return;
+  const container=gi('ps-tabs'); if(!container) return;
+  container.addEventListener('click', e=>{
+    if(e.target.closest('.ps-del')) return;
+    const nameSpan=e.target.closest('.ps-tab-name');
+    if(nameSpan && nameSpan.getAttribute('contenteditable')==='true') return;
+    const tab=e.target.closest('.ps-tab');
+    if(!tab) return;
+    const id=tab.dataset.id;
+    if(id) switchProfile(id);
+  });
+  _psDelegationBound=true;
+}
+
 function buildProfileTabs(){
   const container=gi('ps-tabs'); if(!container) return;
+  bindProfileDelegation();
   container.innerHTML='';
-  // update header label
   const hdr=gi('adm-profile-name');
   if(hdr) hdr.textContent=ap().name||'โปรไฟล์หลัก';
   Object.entries(store.profiles).forEach(([id, p])=>{
-    const btn=document.createElement('div'); btn.className='ps-tab'+(id===store.activeProfile?' active':'');
+    const isActive = id===store.activeProfile;
+    const isTarget = id===_switchTarget && _switching;
+    const btn=document.createElement('div');
+    btn.className='ps-tab'+(isActive?' active':'')+(isTarget?' target':'');
     btn.dataset.id=id;
-    const liveIcon = id===store.activeProfile ? '<span class="ps-live-dot"></span>' : '';
-    btn.innerHTML=`${liveIcon}<span class="ps-tab-name" 
-      contenteditable="${id===store.activeProfile?'true':'false'}"
+    const liveIcon = isActive ? '<span class="ps-live-dot"></span>' : '';
+    btn.innerHTML=`${liveIcon}<span class="ps-tab-name"
+      contenteditable="${isActive?'true':'false'}"
       onblur="renameProfile('${id}',this.textContent)"
       onclick="event.stopPropagation()"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
       style="outline:none;min-width:20px"
-      title="${id===store.activeProfile?'คลิกเพื่อแก้ชื่อ':''}"
+      title="${isActive?'คลิกเพื่อแก้ชื่อ':''}"
     >${esc(p.name||'โปรไฟล์')}</span>
     <button class="ps-del" onclick="event.stopPropagation();deleteProfile('${id}')" title="ลบโปรไฟล์นี้">✕</button>`;
-    btn.addEventListener('click', ()=>switchProfile(id));
     container.appendChild(btn);
   });
 }
 
+// ─── PROFILE SWITCH with progress bar (queued, never drops a click) ───
+let _switching=false;
+let _switchTarget=null;
+let _switchQueued=null;
+function setProgress(pct){
+  const bar=gi('switch-progress')?.querySelector('.bar');
+  if(bar) bar.style.width=pct+'%';
+}
+function showProgress(on){
+  const p=gi('switch-progress'); if(!p) return;
+  if(on){ p.classList.add('show'); setProgress(8); }
+  else { setProgress(100); setTimeout(()=>{ p.classList.remove('show'); setProgress(0); },260); }
+}
 function switchProfile(id){
   if(!store.profiles[id]) return;
-  // save current form into current profile first
+  if(id===store.activeProfile && !_switching) return;
+  if(_switching){ _switchQueued=id; return; }
+
+  _switching=true; _switchTarget=id; _switchQueued=null;
   collectForm();
   store.activeProfile=id;
-  fillForm(); renderLinks(); renderAnns(); renderPublic(); applyTheme(); buildProfileTabs();
-  toast(`เปลี่ยนเป็น: ${store.profiles[id].name||id}`, 'ok');
+
+  showProgress(true);
+  const ld=gi('switch-loading'); ld.classList.add('show');
+  document.querySelectorAll('.ps-tab').forEach(t=>{
+    if(t.dataset.id===id) t.classList.add('target');
+    t.classList.add('switching');
+  });
+  setProgress(30);
+
+  requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
+    setProgress(55);
+    fillForm(); renderLinks(); renderAnns();
+    setProgress(80);
+    renderPublic(); applyTheme(); buildProfileTabs();
+    ld.classList.remove('show');
+    showProgress(false);
+    _switching=false; _switchTarget=null;
+    toast(`เปลี่ยนเป็น: ${store.profiles[id].name||id}`, 'ok');
+    if(_switchQueued && _switchQueued!==store.activeProfile){
+      const next=_switchQueued; _switchQueued=null;
+      switchProfile(next);
+    }
+  }); });
+}
+
+// copy the shareable link for the currently-edited profile
+function copyProfileLink(){
+  const url=profileLink(store.activeProfile);
+  const done=()=>toast('คัดลอกลิงก์โปรไฟล์แล้ว ✓','ok');
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(done).catch(()=>fallbackCopy(url,done));
+  } else fallbackCopy(url,done);
+}
+function fallbackCopy(text,done){
+  const t=document.createElement('textarea'); t.value=text;
+  t.style.position='fixed'; t.style.opacity='0'; document.body.appendChild(t);
+  t.select(); try{ document.execCommand('copy'); }catch(e){} t.remove(); done&&done();
+}
+// open the public page for the currently-edited profile in a new tab
+function openProfileLink(){
+  window.open(profileLink(store.activeProfile), '_blank', 'noopener');
 }
 
 function doNewProfile(){
@@ -1827,6 +2390,7 @@ function doNewProfile(){
   if(!name||!name.trim()) return;
   const id='p'+Date.now();
   store.profiles[id]={ name:name.trim(), ...DEFAULT_PROFILE };
+  markDirty();
   switchProfile(id);
 }
 
@@ -1834,6 +2398,7 @@ function renameProfile(id, newName){
   const n=(newName||'').trim();
   if(!n||!store.profiles[id]) return;
   store.profiles[id].name=n;
+  markDirty();
   buildProfileTabs();
   renderPublic();
 }
@@ -1847,6 +2412,7 @@ function deleteProfile(id){
   if(store.activeProfile===id){
     store.activeProfile=Object.keys(store.profiles)[0];
   }
+  markDirty();
   fillForm(); renderLinks(); renderAnns(); renderPublic(); applyTheme(); buildProfileTabs();
   toast(`ลบโปรไฟล์ "${name}" แล้ว`,'ok');
 }
