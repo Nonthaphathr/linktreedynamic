@@ -1203,8 +1203,8 @@ button.lk { width:100%; font:inherit; cursor:pointer; text-align:left; }
   <div class="modal-box">
     <button class="modal-close" onclick="closeCopyModal()">×</button>
     <div class="modal-title" id="copy-modal-title">คัดลอกข้อความ</div>
-    <div class="modal-sub">เลือกแล้วคัดลอก หรือกดปุ่ม "คัดลอกข้อความ" ด้านล่าง</div>
-    <textarea class="copy-modal-ta" id="copy-modal-ta" readonly onclick="this.select()"></textarea>
+    <div class="modal-sub">แก้ไขข้อความได้ตามต้องการ แล้วกดปุ่ม "คัดลอกข้อความ" ด้านล่าง</div>
+    <textarea class="copy-modal-ta" id="copy-modal-ta" placeholder="พิมพ์หรือแก้ไขข้อความที่นี่..."></textarea>
     <div class="copy-modal-actions">
       <button class="btn btn-o btn-sm" onclick="closeCopyModal()">ปิด</button>
       <button class="btn btn-p btn-sm" id="copy-modal-btn" onclick="doCopyModalText()"><span>📋 คัดลอกข้อความ</span></button>
@@ -2080,6 +2080,7 @@ function openCopyModal(title, text){
   gi('copy-modal').classList.add('show');
 }
 function closeCopyModal(){ gi('copy-modal').classList.remove('show'); }
+gi('copy-modal-ta').addEventListener('input',()=>{ gi('copy-modal-btn').querySelector('span').textContent='📋 คัดลอกข้อความ'; });
 function doCopyModalText(){
   const ta=gi('copy-modal-ta'); const text=ta.value;
   const done=()=>{ gi('copy-modal-btn').querySelector('span').textContent='✓ คัดลอกแล้ว'; toast('คัดลอกข้อความแล้ว','ok'); };
